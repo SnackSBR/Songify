@@ -915,4 +915,15 @@
   <data name="brw_CommandOnUserCooldown" xml:space="preserve">
     <value>Response when the User is on cooldown (per user sr command cooldown)</value>
   </data>
+  <data name="bw_lblBlockedGenre" xml:space="preserve">
+    <value>Blocked Genre</value>
+    <comment>Label content for blocked genre</comment>
+  </data>
+  <data name="mw_menu_Genre" xml:space="preserve">
+    <value>Genre Blacklist</value>
+    <comment>Menu content for "Genre Blacklist"</comment>
+  </data>
+  <data name="Sw_Integration_FulfillRedemption" xml:space="preserve">
+    <value>Fulfill the redemption automatically.</value>
+  </data>
 </root>

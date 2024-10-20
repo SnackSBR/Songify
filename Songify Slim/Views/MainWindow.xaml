@@ -340,6 +340,10 @@
                     x:Name="mi_Blacklist"
                     Click="Mi_Blacklist_Click"
                     Header="{x:Static local:Resources.mw_menu_Blacklist}" />
+                <MenuItem
+                    x:Name="mi_Genre"
+                    Click="Mi_Genre_Click"
+                    Header="{x:Static local:Resources.mw_menu_Genre}" />
             </MenuItem>
             <MenuItem Header="{x:Static local:Resources.mw_menu_History}">
                 <MenuItem

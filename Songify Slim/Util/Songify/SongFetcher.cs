@@ -16,7 +16,6 @@ using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using Unosquare.Swan.Formatters;
 using System.Windows.Threading;
 using MahApps.Metro.Controls;
-using TwitchLib.Api.Helix.Models.Soundtrack;
 using System.Reflection;
 using System.Xml.Linq;
 using Utils = MahApps.Metro.Controls.Utils;

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
+using YamlDotNet.Core.Tokens;
+using Newtonsoft.Json.Linq;
 
 namespace Songify_Slim.Util.Settings
 {
@@ -639,6 +641,18 @@ namespace Songify_Slim.Util.Settings
 
         public static string WebUserAgent => GetWebua();
 
+        public static bool FulfillRedemption 
+        { 
+            get => GetFulfillRedemption(); 
+            set => SetFulfillRedemption(value); 
+        }
+
+        public static List<string> GenreBlacklist
+        {
+            get => GetGenreBlacklist();
+            set => SetGenreBlacklist(value);
+        }
+
         public static Configuration Export()
         {
             SpotifyCredentials spotifyCredentials = new()
@@ -795,6 +809,8 @@ namespace Songify_Slim.Util.Settings
                 Uuid = GetUuid(),
                 WebServerPort = GetWebServerPort(),
                 WebUserAgent = GetWebua(),
+                FulfillRedemption = GetFulfillRedemption(),
+                GenreBlacklist = GetGenreBlacklist(),
             };
 
             return new Configuration
@@ -2341,6 +2357,28 @@ namespace Songify_Slim.Util.Settings
         private static void SetWebServerPort(int value)
         {
             _currentConfig.AppConfig.WebServerPort = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+        }
+
+        private static bool GetFulfillRedemption()
+        {
+            return _currentConfig.AppConfig.FulfillRedemption;
+        }
+
+        private static List<string> GetGenreBlacklist()
+        {
+            return _currentConfig.AppConfig.GenreBlacklist;
+        }
+
+        private static void SetFulfillRedemption(bool value)
+        {
+            _currentConfig.AppConfig.FulfillRedemption = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+        }
+
+        private static void SetGenreBlacklist(List<string> value)
+        {
+            _currentConfig.AppConfig.GenreBlacklist = value;
             ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
         }
     }

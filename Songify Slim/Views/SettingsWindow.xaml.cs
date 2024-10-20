@@ -267,6 +267,7 @@ namespace Songify_Slim.Views
                     }
                 }
             }
+            TglFulfillRedemption.IsOn = Settings.FulfillRedemption;
             return;
         }
 
@@ -1371,7 +1372,7 @@ namespace Songify_Slim.Views
         {
             Settings.TwAcc = ((UC_AccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).Username;
             Settings.TwOAuth = ((UC_AccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).OAuth;
-            TwitchHandler.Client?.Disconnect();
+            TwitchHandler.Client?.DisconnectAsync();
             TwitchHandler.Client = null;
             TwitchHandler.BotConnect();
             TwitchHandler.MainConnect();
@@ -1718,6 +1719,11 @@ namespace Songify_Slim.Views
                 int seconds = totalSeconds % 60;
                 UserCooldownDisplay.Text = $"({minutes:D2}:{seconds:D2})";
             }
+        }
+
+        private void tgl_FulfillRedemption_Toggled(object sender, RoutedEventArgs e)
+        {
+            Settings.FulfillRedemption = TglFulfillRedemption.IsOn;
         }
     }
 }

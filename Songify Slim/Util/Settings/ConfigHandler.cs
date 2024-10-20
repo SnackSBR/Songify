@@ -299,6 +299,8 @@ namespace Songify_Slim.Util.Settings
         public string TwRewardSkipId { get; set; } = "";
         public string Uuid { get; set; } = "";
         public string WebUserAgent = "Songify Data Provider";
+        public bool FulfillRedemption { get; set; }
+        public List<string> GenreBlacklist { get; set; } = [];
     }
 
     public class Config
@@ -368,5 +370,7 @@ namespace Songify_Slim.Util.Settings
         public string TwRewardId { get; set; }
         public List<string> UserBlacklist { get; set; }
         public string Uuid { get; set; }
+        public bool FulfillRedemption { get; set; }
+        public List<string> GenreBlacklist { get; set; }
     }
 }

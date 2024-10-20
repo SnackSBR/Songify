@@ -466,6 +466,15 @@ namespace Songify_Slim.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Blocked Genre.
+        /// </summary>
+        public static string bw_lblBlockedGenre {
+            get {
+                return ResourceManager.GetString("bw_lblBlockedGenre", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Blocked Users.
         /// </summary>
         public static string bw_lblBlockedUsers {
@@ -741,6 +750,15 @@ namespace Songify_Slim.Properties {
         public static string mw_menu_File {
             get {
                 return ResourceManager.GetString("mw_menu_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Genre Blacklist.
+        /// </summary>
+        public static string mw_menu_Genre {
+            get {
+                return ResourceManager.GetString("mw_menu_Genre", resourceCulture);
             }
         }
         
@@ -1075,6 +1093,15 @@ namespace Songify_Slim.Properties {
         public static string sw_Integration_ConfigureResponses {
             get {
                 return ResourceManager.GetString("sw_Integration_ConfigureResponses", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Fulfill the redemption automatically..
+        /// </summary>
+        public static string Sw_Integration_FulfillRedemption {
+            get {
+                return ResourceManager.GetString("Sw_Integration_FulfillRedemption", resourceCulture);
             }
         }
         
