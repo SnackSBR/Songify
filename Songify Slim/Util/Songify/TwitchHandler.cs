@@ -175,7 +175,7 @@ namespace Songify_Slim.Util.Songify
                         {
                             foreach (JoinedChannel clientJoinedChannel in Client.JoinedChannels)
                             {
-                                Client.LeaveChannel(clientJoinedChannel);
+                                await Client.LeaveChannelAsync(clientJoinedChannel);
                             }
 							await Client.DisconnectAsync();
                             Client = null;
@@ -329,9 +329,11 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static void ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
+        private static Task ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
         {
             Logger.LogStr($"TWITCH: Left channel {e.Channel}");
+
+            return Task.CompletedTask;
         }
 
         public static async Task<bool> CheckStreamIsUp()
@@ -1158,7 +1160,7 @@ namespace Songify_Slim.Util.Songify
                 }
             });
             Logger.LogStr($"TWITCH: Connected to Twitch. User: {Client.TwitchUsername}");
-            Client.JoinChannel(Settings.Settings.TwChannel, true);
+            await Client.JoinChannelAsync(Settings.Settings.TwChannel, true);
         }
         private static Task Client_OnDisconnected(object sender, OnDisconnectedArgs e)
         {
@@ -1907,7 +1909,7 @@ namespace Songify_Slim.Util.Songify
             response = response.Replace("{cd}", time.ToString());
             return response;
         }
-        private static async void ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
+        private static async Task ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
         {
             foreach (JoinedChannel clientJoinedChannel in Client.JoinedChannels)
             {
