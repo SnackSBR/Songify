@@ -117,6 +117,7 @@ namespace Songify_Slim.Views
             TxtbxOutputformat2.Text = Settings.OutputString2;
             CbxUserLevels.SelectedIndex = Settings.TwSrUserLevel == -1 ? 0 : Settings.TwSrUserLevel;
             NudServerPort.Value = Settings.WebServerPort;
+            tgl_KeepCover.IsOn = Settings.KeepAlbumCover;
             TglAutoStartWebserver.IsOn = Settings.AutoStartWebServer;
             TglBetaUpdates.IsOn = Settings.BetaUpdates;
             TglOnlyWorkWhenLive.IsOn = Settings.BotOnlyWorkWhenLive;
@@ -234,7 +235,7 @@ namespace Songify_Slim.Views
             if (Settings.TwitchUser != null)
             {
                 UpdateTwitchUserUi(Settings.TwitchUser, ImgTwitchProfile, LblTwitchName, BtnLogInTwitch, 0, BtnLogInTwitchAlt);
-                TxtbxTwChannel.Text = Settings.TwitchUser.Login;
+                //TxtbxTwChannel.Text = Settings.TwitchUser.Login;
                 CbAccountSelection.Items.Add(new ComboBoxItem
                 {
                     Content = new UC_AccountItem(Settings.TwitchUser.Login, Settings.TwitchAccessToken)
@@ -1720,10 +1721,17 @@ namespace Songify_Slim.Views
                 UserCooldownDisplay.Text = $"({minutes:D2}:{seconds:D2})";
             }
         }
-
-        private void tgl_FulfillRedemption_Toggled(object sender, RoutedEventArgs e)
+		
+        private void Tgl_KeepCover_OnToggled(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded)
+                return;
+            Settings.KeepAlbumCover = ((ToggleSwitch)sender).IsOn;
+        }
+		
+		private void tgl_FulfillRedemption_Toggled(object sender, RoutedEventArgs e)
         {
             Settings.FulfillRedemption = TglFulfillRedemption.IsOn;
-        }
+		}
     }
 }

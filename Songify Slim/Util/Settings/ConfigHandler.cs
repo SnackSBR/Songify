@@ -52,7 +52,7 @@ namespace Songify_Slim.Util.Settings
                         path += "/AppConfig" + fileEnding;
                         yaml = serializer.Serialize(o as AppConfig ?? throw new InvalidOperationException());
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         //Console.WriteLine(e);
                         return;
@@ -298,6 +298,8 @@ namespace Songify_Slim.Util.Settings
         public string TwRewardGoalRewardId { get; set; } = "";
         public string TwRewardSkipId { get; set; } = "";
         public string Uuid { get; set; } = "";
+        public bool KeepAlbumCover { get; set; } = false;
+
         public string WebUserAgent = "Songify Data Provider";
         public bool FulfillRedemption { get; set; }
         public List<string> GenreBlacklist { get; set; } = [];

@@ -50,10 +50,13 @@ namespace Songify_Slim.Util.General
         public static bool ForceUpdate;
         private static readonly TaskQueue UpdateQueueWindowTasks = new();
         public static List<PlaylistTrack> LikedPlaylistTracks = [];
+        public static Tuple<bool, string> Canvas;
+
 
         public static string RootDirectory => string.IsNullOrEmpty(Settings.Settings.Directory)
             ? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)
             : Settings.Settings.Directory;
+
 
         public static T FindChild<T>(DependencyObject parent, string childName)
             where T : DependencyObject
@@ -244,7 +247,7 @@ namespace Songify_Slim.Util.General
                             }
 
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             Logger.LogStr("Spotify API: Error getting Liked Songs");
                         }

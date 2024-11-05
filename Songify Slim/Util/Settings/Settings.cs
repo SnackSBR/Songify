@@ -295,6 +295,8 @@ namespace Songify_Slim.Util.Settings
 
         public static bool IsLive { get; set; }
 
+        public static bool KeepAlbumCover { get => GetKeepAlubmCover(); set => SetKeepAlbumCover(value); }
+
         public static string Language
         {
             get => GetLanguage();
@@ -640,19 +642,7 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static string WebUserAgent => GetWebua();
-
-        public static bool FulfillRedemption 
-        { 
-            get => GetFulfillRedemption(); 
-            set => SetFulfillRedemption(value); 
-        }
-
-        public static List<string> GenreBlacklist
-        {
-            get => GetGenreBlacklist();
-            set => SetGenreBlacklist(value);
-        }
-
+		
         public static Configuration Export()
         {
             SpotifyCredentials spotifyCredentials = new()
@@ -750,6 +740,7 @@ namespace Songify_Slim.Util.Settings
                 DownloadCover = GetDownloadCover(),
                 FontSize = GetFontSize(),
                 FontsizeQueue = GetFontSizeQueue(),
+                KeepAlbumCover = GetKeepAlubmCover(),
                 Language = GetLanguage(),
                 LastShownMotdId = GetLastShownMotdId(),
                 LimitSrToPlaylist = GetLimitSrToPlaylist(),
@@ -788,9 +779,9 @@ namespace Songify_Slim.Util.Settings
                 TwSrCommand = GetTwSrCommand(),
                 TwSrCooldown = GetTwSrCooldown(),
                 TwSrMaxReq = GetTwSrMaxReq(),
-                TwSrMaxReqFollower = GetTwSrMaxReqFollower(),
                 TwSrMaxReqBroadcaster = GetTwSrMaxReqBroadcaster(),
                 TwSrMaxReqEveryone = GetTwSrMaxReqEveryone(),
+                TwSrMaxReqFollower = GetTwSrMaxReqFollower(),
                 TwSrMaxReqModerator = GetTwSrMaxReqModerator(),
                 TwSrMaxReqSubscriber = GetTwSrMaxReqSubscriber(),
                 TwSrMaxReqVip = GetTwSrMaxReqVip(),
@@ -1168,6 +1159,11 @@ namespace Songify_Slim.Util.Settings
         private static int GetFontSizeQueue()
         {
             return _currentConfig.AppConfig.FontsizeQueue;
+        }
+
+        private static bool GetKeepAlubmCover()
+        {
+            return _currentConfig.AppConfig.KeepAlbumCover;
         }
 
         private static string GetLanguage()
@@ -1935,6 +1931,11 @@ namespace Songify_Slim.Util.Settings
             ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
         }
 
+        private static void SetKeepAlbumCover(bool value)
+        {
+            _currentConfig.AppConfig.KeepAlbumCover = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+        }
         private static void SetLanguage(string value)
         {
             _currentConfig.AppConfig.Language = value;
@@ -2380,6 +2381,18 @@ namespace Songify_Slim.Util.Settings
         {
             _currentConfig.AppConfig.GenreBlacklist = value;
             ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+        }
+		
+		public static bool FulfillRedemption 
+        { 
+            get => GetFulfillRedemption(); 
+            set => SetFulfillRedemption(value); 
+        }
+
+        public static List<string> GenreBlacklist
+        {
+            get => GetGenreBlacklist();
+            set => SetGenreBlacklist(value);
         }
     }
 }
