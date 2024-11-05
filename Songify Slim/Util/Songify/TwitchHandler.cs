@@ -377,7 +377,7 @@ namespace Songify_Slim.Util.Songify
                         }
                     };
 
-                    TwitchApi.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions];
+                    TwitchApi.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions, AuthScopes.Moderator_Read_Followers];
                     TokenCheck = await TwitchApi.Auth.ValidateAccessTokenAsync(Settings.Settings.TwitchAccessToken);
 
                     if (TokenCheck == null)
@@ -454,7 +454,7 @@ namespace Songify_Slim.Util.Songify
                             AccessToken = Settings.Settings.TwitchBotToken
                         }
                     };
-                    _twitchApiBot.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions];
+                    _twitchApiBot.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions, AuthScopes.Moderator_Read_Followers];
                     _botTokenCheck = await _twitchApiBot.Auth.ValidateAccessTokenAsync(Settings.Settings.TwitchBotToken);
                     if (_botTokenCheck == null)
                     {
