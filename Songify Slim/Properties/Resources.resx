@@ -915,6 +915,12 @@
   <data name="brw_CommandOnUserCooldown" xml:space="preserve">
     <value>Response when the User is on cooldown (per user sr command cooldown)</value>
   </data>
+  <data name="Sw_System_DisableDonationReminder" xml:space="preserve">
+    <value>Disable donation reminder</value>
+  </data>
+  <data name="sw_tcOutput_DownloadCanvas" xml:space="preserve">
+    <value>Use Canvas if available</value>
+  </data>
   <data name="bw_lblBlockedGenre" xml:space="preserve">
     <value>Blocked Genre</value>
     <comment>Label content for blocked genre</comment>

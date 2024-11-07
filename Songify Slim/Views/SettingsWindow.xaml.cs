@@ -49,6 +49,20 @@ namespace Songify_Slim.Views
         private Window _mW;
         private readonly List<int> _refundConditions = [];
 
+        private Dictionary<string, string> _supportedLanguages = new()
+        {
+            { "en", "English" },
+            { "de-DE", "German" },
+            { "ru-RU", "Russian" },
+            { "es", "Spanish" },
+            { "fr", "French" },
+            { "pl-PL", "Polish" },
+            { "pt-PT", "Portuguese" },
+            { "it-IT", "Italian" },
+            { "pt-BR", "Brazilian Portuguese" },
+            { "be-BY", "Belarusian" }
+        };
+
         public Window_Settings()
         {
             InitializeComponent();
@@ -90,6 +104,7 @@ namespace Songify_Slim.Views
             ChbxTwReward.IsOn = Settings.TwSrReward;
             ChbxAutostart.IsOn = Settings.Autostart;
             ChbxCover.IsOn = Settings.DownloadCover;
+            TglCanvas.IsOn = Settings.DownloadCanvas;
             CbPauseOptions.SelectedIndex = (int)Settings.PauseOption;
             //ChbxCustomPause.IsOn = Settings.CustomPauseTextEnabled;
             ChbxMinimizeSystray.IsOn = Settings.Systray;
@@ -217,18 +232,22 @@ namespace Songify_Slim.Views
 
             ThemeHandler.ApplyTheme();
             CbxLanguage.SelectionChanged -= ComboBox_SelectionChanged;
-            CbxLanguage.SelectedIndex = Settings.Language switch
-            {
-                "en" => 0,
-                "de-DE" => 1,
-                "ru-RU" => 2,
-                "es" => 3,
-                "fr" => 4,
-                "pl-PL" => 5,
-                "pt-PT" => 6,
-                "it-IT" => 7,
-                _ => CbxLanguage.SelectedIndex
-            };
+            CbxLanguage.ItemsSource = _supportedLanguages;
+            CbxLanguage.SelectedValue = Settings.Language;
+
+            //CbxLanguage.SelectedIndex = Settings.Language switch
+            //{
+            //    "en" => 0,
+            //    "de-DE" => 1,
+            //    "ru-RU" => 2,
+            //    "es" => 3,
+            //    "fr" => 4,
+            //    "pl-PL" => 5,
+            //    "pt-PT" => 6,
+            //    "it-IT" => 7,
+            //    "be-BY" => 8,
+            //    _ => CbxLanguage.SelectedIndex
+            //};
             CbxLanguage.SelectionChanged += ComboBox_SelectionChanged;
             CbAccountSelection.SelectionChanged -= CbAccountSelection_SelectionChanged;
             CbAccountSelection.Items.Clear();
@@ -544,57 +563,70 @@ namespace Songify_Slim.Views
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            switch (CbxLanguage.SelectedIndex)
+            if (CbxLanguage.SelectedValue is string selectedLanguageCode)
             {
-                case 0:
-                    // English
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
-                    Settings.Language = "en";
-                    break;
-                case 1:
-                    // German
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("de-DE");
-                    Settings.Language = "de-DE";
-                    break;
-                case 2:
-                    // Russian
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("ru-RU");
-                    Settings.Language = "ru-RU";
-                    break;
-                case 3:
-                    // Spansih
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("es");
-                    Settings.Language = "es";
-                    break;
-                case 4:
-                    // Spansih
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("fr");
-                    Settings.Language = "fr";
-                    break;
-                case 5:
-                    // Polish
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("pl-PL");
-                    Settings.Language = "pl-PL";
-                    break;
-                case 6:
-                    // Portuguese
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-PT");
-                    Settings.Language = "pt-PT";
-                    break;
-                case 7:
-                    // Italian
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("it-IT");
-                    Settings.Language = "it-IT";
-                    break;
-                case 8:
-                    // Brazilian Portuguese
-                    Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-BR");
-                    Settings.Language = "pt-BR";
-                    break;
+                // Update the current UI culture and settings
+                Thread.CurrentThread.CurrentUICulture = new CultureInfo(selectedLanguageCode);
+                Settings.Language = selectedLanguageCode;
+
+                // Restart the application to apply the language change
+                Process.Start(Application.ResourceAssembly.Location);
+                Application.Current.Shutdown();
             }
 
-            Process.Start(Application.ResourceAssembly.Location);
-            Application.Current.Shutdown();
+
+
+            //switch (CbxLanguage.SelectedIndex)
+            //{
+            //    case 0:
+            //        // English
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
+            //        Settings.Language = "en";
+            //        break;
+            //    case 1:
+            //        // German
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("de-DE");
+            //        Settings.Language = "de-DE";
+            //        break;
+            //    case 2:
+            //        // Russian
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("ru-RU");
+            //        Settings.Language = "ru-RU";
+            //        break;
+            //    case 3:
+            //        // Spansih
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("es");
+            //        Settings.Language = "es";
+            //        break;
+            //    case 4:
+            //        // Spansih
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("fr");
+            //        Settings.Language = "fr";
+            //        break;
+            //    case 5:
+            //        // Polish
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pl-PL");
+            //        Settings.Language = "pl-PL";
+            //        break;
+            //    case 6:
+            //        // Portuguese
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-PT");
+            //        Settings.Language = "pt-PT";
+            //        break;
+            //    case 7:
+            //        // Italian
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("it-IT");
+            //        Settings.Language = "it-IT";
+            //        break;
+            //    case 8:
+            //        // Brazilian Portuguese
+            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-BR");
+            //        Settings.Language = "pt-BR";
+            //        break;
+            //}
+
+            //Process.Start(Application.ResourceAssembly.Location);
+            //Application.Current.Shutdown();
         }
 
         private void ComboBoxColorSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1700,14 +1732,6 @@ namespace Songify_Slim.Views
             Settings.BotCmdQueue = ((ToggleSwitch)sender).IsOn;
         }
 
-        private void NudUserCdMinutes_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
-        {
-        }
-
-        private void NudUserCdSeconds_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
-        {
-        }
-
         private void CooldownSpinner_OnValueChangedpinner_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
         {
             if (!IsLoaded)
@@ -1727,6 +1751,13 @@ namespace Songify_Slim.Views
             if (!IsLoaded)
                 return;
             Settings.KeepAlbumCover = ((ToggleSwitch)sender).IsOn;
+        }
+
+        private void TglCanvas_OnToggled(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded)
+                return;
+            Settings.DownloadCanvas = ((ToggleSwitch)sender).IsOn;
         }
 		
 		private void tgl_FulfillRedemption_Toggled(object sender, RoutedEventArgs e)

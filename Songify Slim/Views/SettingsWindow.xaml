@@ -77,17 +77,9 @@
                             Width="220"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
-                            SelectionChanged="ComboBox_SelectionChanged">
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_en}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_deDE}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_ru}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_es}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_fr}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_pl}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_pt}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_it}" />
-                            <ComboBoxItem Content="{x:Static local:Resources.lang_br}" />
-                        </ComboBox>
+                            DisplayMemberPath="Value"
+                            SelectedValuePath="Key"
+                            SelectionChanged="ComboBox_SelectionChanged" />
                         <controls:ToggleSwitch
                             x:Name="ChbxAutostart"
                             Grid.Row="2"
@@ -130,7 +122,7 @@
                                 Width="467"
                                 Height="32"
                                 VerticalAlignment="Top"
-                                Content="Disable donation reminder"
+                                Content="{x:Static local:Resources.Sw_System_DisableDonationReminder}"
                                 ContentPadding="0"
                                 Focusable="False"
                                 FontFamily="Segoe UI"
@@ -250,6 +242,8 @@
                             <RowDefinition Height="38" />
                             <RowDefinition Height="38" />
                             <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
+
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="72*" />
@@ -447,6 +441,19 @@
                             FontFamily="Segoe UI"
                             FontSize="12"
                             Toggled="ChbxCover_Checked" />
+                        <controls:ToggleSwitch
+                            x:Name="TglCanvas"
+                            Grid.Row="9"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Height="32"
+                            HorizontalAlignment="Stretch"
+                            Content="{x:Static local:Resources.sw_tcOutput_DownloadCanvas}"
+                            ContentPadding="0"
+                            Focusable="False"
+                            FontFamily="Segoe UI"
+                            FontSize="12"
+                            Toggled="TglCanvas_OnToggled" />
                         <Button
                             x:Name="BtnCopyUrl"
                             Grid.Row="5"
