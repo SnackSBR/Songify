@@ -2465,6 +2465,7 @@ namespace Songify_Slim.Util.Songify
             });
             //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Closed");
             Logger.LogStr("PUBSUB: Disconnected");
+            CreatePubSubsConnection();
         }
         private static async void OnPubSubServiceConnected(object sender, EventArgs e)
         {
@@ -2489,14 +2490,11 @@ namespace Songify_Slim.Util.Songify
             Logger.LogStr("PUBSUB: Error");
             Logger.LogExc(e.Exception);
             await TwitchPubSub.DisconnectAsync();
-            //TODO: Enable this again once the PubSub issues are fixed
-            if (PubSubEnabled)
-                await TwitchPubSub.ConnectAsync();
-            await Task.Delay(30000);
+            
             try
             {
-                CreatePubSubListenEvents();
-                await TwitchPubSub.ConnectAsync();
+                if (PubSubEnabled)
+                    CreatePubSubsConnection();
             }
             catch (Exception exception)
             {
@@ -2678,15 +2676,24 @@ namespace Songify_Slim.Util.Songify
                     }
                     else
                     {
-                        if (Settings.Settings.FulfillRedemption)
+                        if (Settings.Settings.FulfillRedemption && isManagable)
                         {
-                            UpdateCustomRewardRedemptionStatusRequest request = new()
+                            try
                             {
-                                Status = CustomRewardRedemptionStatus.FULFILLED
-                            };
+                                UpdateCustomRewardRedemptionStatusRequest request = new()
+                                {
+                                    Status = CustomRewardRedemptionStatus.FULFILLED
+                                };
 
-                            await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(Settings.Settings.TwitchUser.Id, reward.Id, [redemption.Id], request, Settings.Settings.TwitchAccessToken);
+                                await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(Settings.Settings.TwitchUser.Id, reward.Id, [redemption.Id], request, Settings.Settings.TwitchAccessToken);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogStr("[FulfillRedemption]: " + ex.Message);
+                                Logger.LogStr(ex.StackTrace);
+                            }
                         }
+
                     }
 
                     if (!string.IsNullOrEmpty(msg))
