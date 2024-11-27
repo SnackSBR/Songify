@@ -302,7 +302,9 @@ namespace Songify_Slim.Util.Settings
         public bool KeepAlbumCover { get; set; } = false;
 
         public string WebUserAgent = "Songify Data Provider";
-        public bool FulfillRedemption { get; set; }
+        public string YTMDToken;
+		
+		public bool FulfillRedemption { get; set; }
         public List<string> GenreBlacklist { get; set; } = [];
     }
 

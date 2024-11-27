@@ -536,7 +536,7 @@ namespace Songify_Slim.Util.Songify
             msg = msg.Replace("{song}",
                 $"{GlobalObjects.CurrentSong.Artists} {(GlobalObjects.CurrentSong.Title != "" ? " - " + GlobalObjects.CurrentSong.Title : "")}");
             msg = msg.Replace("{artist}", $"{GlobalObjects.CurrentSong.Artists}");
-            msg = msg.Replace("{single_artist}", $"{GlobalObjects.CurrentSong.FullArtists.FirstOrDefault()?.Name}");
+            msg = msg.Replace("{single_artist}", GlobalObjects.CurrentSong.FullArtists != null ? $"{GlobalObjects.CurrentSong.FullArtists.FirstOrDefault()?.Name}" : GlobalObjects.CurrentSong.Artists);
             msg = msg.Replace("{title}", $"{GlobalObjects.CurrentSong.Title}");
             msg = msg.Replace(@"\n", " - ").Replace("  ", " ");
 
@@ -549,6 +549,7 @@ namespace Songify_Slim.Util.Songify
                 SendChatMessage(Settings.Settings.TwChannel, msg);
             }
         }
+
         private static async void AddSong(string trackId, OnMessageReceivedArgs e)
         {
             if (string.IsNullOrWhiteSpace(trackId))
@@ -1258,7 +1259,7 @@ namespace Songify_Slim.Util.Songify
                 return;
             }
 
-            if(e.ChatMessage.Message.StartsWith("!"))
+            if (e.ChatMessage.Message.StartsWith("!"))
                 Settings.Settings.IsLive = await CheckStreamIsUp();
 
             // Same code from above but it reacts to a command instead of rewards
@@ -1495,6 +1496,7 @@ namespace Songify_Slim.Util.Songify
                     string msg = CreateResponse(new PlaceholderContext(GlobalObjects.CurrentSong)
                     {
                         User = e.ChatMessage.DisplayName,
+                        SingleArtist = GlobalObjects.CurrentSong.FullArtists != null ? GlobalObjects.CurrentSong.FullArtists.First().Name : GlobalObjects.CurrentSong.Artists,
                         MaxReq = $"{Settings.Settings.TwSrMaxReq}",
                         ErrorMsg = null,
                         MaxLength = $"{Settings.Settings.MaxSongLength}",
@@ -1502,6 +1504,12 @@ namespace Songify_Slim.Util.Songify
                         Req = GlobalObjects.Requester,
                         Cd = Settings.Settings.TwSrCooldown.ToString()
                     }, Settings.Settings.BotRespSong);
+
+                    if (msg.Contains("{single_artist}"))
+                        msg = msg.Replace("{single_artist}",
+                            GlobalObjects.CurrentSong.FullArtists != null
+                                ? GlobalObjects.CurrentSong.FullArtists.First().Name
+                                : GlobalObjects.CurrentSong.Artists);
 
 
                     if (msg.StartsWith("[announce "))
@@ -1870,7 +1878,7 @@ namespace Songify_Slim.Util.Songify
                     Settings.Settings.TwitchAccessToken);
                 return new Tuple<bool?, ChannelFollower>(resp.Data.Length > 0, resp.Data.FirstOrDefault());
             }
-            catch (Exception )
+            catch (Exception)
             {
                 return new Tuple<bool?, ChannelFollower>(null, new ChannelFollower());
             }

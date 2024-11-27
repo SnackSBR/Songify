@@ -13,6 +13,7 @@ using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using Songify_Slim.Views;
 using System.Windows;
 using Newtonsoft.Json.Linq;
+using Songify_Slim.Models.YTMD;
 
 namespace Songify_Slim.Util.Songify
 {
@@ -23,6 +24,7 @@ namespace Songify_Slim.Util.Songify
         /// </summary>
 
         private static readonly ApiClient ApiClient = new(GlobalObjects.ApiUrl);
+        private static readonly YTMDApiClient ApiClientYTM = new("http://localhost:9863/api/v1");
 
         internal enum RequestMethod
         {
@@ -113,7 +115,7 @@ namespace Songify_Slim.Util.Songify
                         throw new ArgumentOutOfRangeException(nameof(method), method, null);
                 }
             }
-            catch (Exception )
+            catch (Exception)
             {
                 //Console.WriteLine(e);
             }
@@ -217,9 +219,22 @@ namespace Songify_Slim.Util.Songify
 
         public static async Task<Tuple<bool, string>> GetCanvasAsync(string songInfoSongId)
         {
+            if (string.IsNullOrEmpty(songInfoSongId))
+            {
+                return new Tuple<bool, string>(false, "");
+            }
             string result = await ApiClient.GetCanvas(songInfoSongId);
             result = result.Replace("\"", "");
             return result != "No canvas found" ? new Tuple<bool, string>(true, result) : new Tuple<bool, string>(false, "");
+        }
+
+        internal static async Task<YTMDResponse> GetYTMData()
+        {
+            if (string.IsNullOrEmpty(Settings.Settings.YTMDToken))
+                return null;
+
+            string result = await ApiClientYTM.Get("state");
+            return string.IsNullOrEmpty(result) ? null : JsonConvert.DeserializeObject<YTMDResponse>(result);
         }
     }
 }
