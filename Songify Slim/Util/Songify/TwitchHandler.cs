@@ -254,7 +254,7 @@ namespace Songify_Slim.Util.Songify
 
         }
 
-        public static void MainConnect()
+        public static async void MainConnect()
         {
             switch (_mainClient)
             {
@@ -1936,7 +1936,7 @@ namespace Songify_Slim.Util.Songify
             return response;
         }
 
-        private static async void ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
+        private static async Task ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
         {
             foreach (JoinedChannel clientJoinedChannel in Client.JoinedChannels)
             {
