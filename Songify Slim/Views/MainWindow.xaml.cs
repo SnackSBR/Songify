@@ -45,6 +45,8 @@ using ImageConverter = Songify_Slim.Util.General.ImageConverter;
 using Rectangle = System.Windows.Shapes.Rectangle;
 using System.Net.NetworkInformation;
 using MahApps.Metro.Controls;
+using Songify_Slim.Util.Songify.YTMDesktop;
+using Songify_Slim.Properties;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
@@ -232,17 +234,19 @@ namespace Songify_Slim.Views
         private async void BtnWidget_Click(object sender, RoutedEventArgs e)
         {
             if (Settings.Upload)
-                Process.Start("https://widget.songify.rocks/" + Settings.Uuid);
+            {
+            }
             else
             {
                 // After user confirmation sends a command to the webserver which clears the queue
                 MessageDialogResult msgResult = await this.ShowMessageAsync("",
-                    "The widget only works if \"Upload Song Info\" is enabled. You can find this option under Settings -> Output.\n\n\nDo you want to activate it now?", MessageDialogStyle.AffirmativeAndNegative,
+                    Properties.Resources.mw_menu_Widget_disclaimer, MessageDialogStyle.AffirmativeAndNegative,
                     new MetroDialogSettings { AffirmativeButtonText = "Yes", NegativeButtonText = "No" });
                 if (msgResult != MessageDialogResult.Affirmative) return;
                 Settings.Upload = true;
-                Process.Start("https://widget.songify.rocks/" + Settings.Uuid);
             }
+
+            Process.Start("https://widget.songify.rocks/" + Settings.Uuid);
         }
 
         private void Cbx_Source_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -314,7 +318,7 @@ namespace Songify_Slim.Views
                     await Sf.FetchSpotifyWeb();
                     break;
                 case PlayerType.YTMDesktop:
-                    await Sf.FetchYTM();
+                    //await Sf.FetchYTM();
                     break;
             }
         }
@@ -371,6 +375,7 @@ namespace Songify_Slim.Views
                 await HandleSpotifyInitializationAsync();
                 await HandleTwitchInitializationAsync();
                 await FinalSetupAndUpdatesAsync();
+                await StartYtmdSocketIoClient();
             }
             else
             {
@@ -382,38 +387,70 @@ namespace Songify_Slim.Views
             SetupMotdTimer();
         }
 
+        public async Task StartYtmdSocketIoClient()
+        {
+            // Replace with your server URL and token
+            const string serverUrl = "http://127.0.0.1:9863/api/v1/realtime";
+            string token = Settings.YTMDToken;
+
+            // Initialize the Socket.IO client
+            SocketIoClient socketClient = new SocketIoClient(serverUrl, token);
+
+            // Run connection in a separate task
+            try
+            {
+                await socketClient.ConnectAsync();
+                Debug.WriteLine("YTMD: Socket.IO connected.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogExc(ex);
+            }
+        }
+
         private static async Task<bool> WaitForInternetConnectionAsync()
         {
-            using HttpClient httpClient = new HttpClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(5); // Set a timeout for the request
-            int retryCount = 0;
-            const int maxRetries = 12;
-            while (retryCount < maxRetries)
+            using HttpClient httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(5) // Set a timeout for the request
+            };
+
+            // List of reliable URLs to check
+            string[] urlsToCheck =
+            [
+                "https://www.google.com",
+                "https://www.cloudflare.com",
+                "https://www.amazon.com",
+                "https://songify.rocks"
+            ];
+
+            while (true)
             {
                 try
                 {
-                    // Try to reach a reliable website
-                    HttpResponseMessage response = await httpClient.GetAsync("https://www.google.com");
+                    // Create tasks for all URLs
+                    List<Task<HttpResponseMessage>> tasks = urlsToCheck.Select(url => httpClient.GetAsync(url)).ToList();
 
-                    if (response.IsSuccessStatusCode)
+                    // Wait for any task to complete successfully
+                    Task<HttpResponseMessage> completedTask = await Task.WhenAny(tasks);
+
+                    // Check if the response from the completed task was successful
+                    if (completedTask is not null && (await completedTask).IsSuccessStatusCode)
                     {
                         Logger.LogStr("CORE: Internet Connection Established");
-                        // Internet is available
                         return true;
                     }
                 }
                 catch
                 {
-                    // Ignore exceptions and wait before retrying
+                    // Ignore exceptions and continue
                 }
 
                 Logger.LogStr("CORE: No Internet Connection");
-                retryCount++;
+
                 // Wait for a short period before retrying
                 await Task.Delay(5000);
             }
-            Logger.LogStr("CORE: Internet not available after 1-minute timeout");
-            return false;
         }
 
         private void SetupMotdTimer()
@@ -738,6 +775,15 @@ namespace Songify_Slim.Views
                 Logger.LogStr("Check Stream up");
                 Settings.IsLive = await TwitchHandler.CheckStreamIsUp();
                 Logger.LogStr("Check Stream up done");
+                switch (Settings.IsLive)
+                {
+                    case true:
+                        Logger.LogStr("Stream is LIVE");
+                        break;
+                    case false:
+                        Logger.LogStr("Stream is NOT live");
+                        break;
+                }
                 Logger.LogStr("SetFetchTimer");
                 SetFetchTimer();
                 Logger.LogStr("SetFetchTimer done");
@@ -916,9 +962,9 @@ namespace Songify_Slim.Views
         private async void Mi_QueueClear_Click(object sender, RoutedEventArgs e)
         {
             // After user confirmation sends a command to the webserver which clears the queue
-            MessageDialogResult msgResult = await this.ShowMessageAsync("Notification",
-                "Do you really want to clear the queue?", MessageDialogStyle.AffirmativeAndNegative,
-                new MetroDialogSettings { AffirmativeButtonText = "Yes", NegativeButtonText = "No" });
+            MessageDialogResult msgResult = await this.ShowMessageAsync(Properties.Resources.s_Warning,
+                Properties.Resources.mw_clearQueueDisclaimer, MessageDialogStyle.AffirmativeAndNegative,
+                new MetroDialogSettings { AffirmativeButtonText = Properties.Resources.msgbx_Yes, NegativeButtonText = Properties.Resources.msgbx_No });
             if (msgResult == MessageDialogResult.Affirmative)
             {
                 //GlobalObjects.ReqList.Clear();
@@ -1014,7 +1060,8 @@ namespace Songify_Slim.Views
             switch (_selectedSource)
             {
                 case PlayerType.YTMDesktop:
-                    FetchTimer(5000);
+                    // stop the timer if the player is YTMDesktop
+                    _timerFetcher.Enabled = false;
                     break;
                 case PlayerType.SpotifyLegacy:
                 case PlayerType.Vlc:

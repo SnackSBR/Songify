@@ -1523,7 +1523,8 @@ namespace Songify_Slim.Views
                         CbSpotifyPlaylist.SelectionChanged -= cb_SpotifyPlaylist_SelectionChanged;
                         while (playlists != null)
                         {
-                            foreach (SimplePlaylist playlist in playlists.Items.Where(playlist => playlist.Owner.Id == GlobalObjects.SpotifyProfile.Id))
+                            foreach (SimplePlaylist playlist in playlists.Items
+                                         .Where(playlist => playlist?.Owner?.Id != null && playlist.Owner.Id == GlobalObjects.SpotifyProfile?.Id))
                             {
                                 CbSpotifyPlaylist.Items.Add(new ComboBoxItem { Content = new UcPlaylistItem(playlist) });
                                 CbSpotifySongLimitPlaylist.Items.Add(new ComboBoxItem { Content = new UcPlaylistItem(playlist) });
@@ -1776,15 +1777,18 @@ namespace Songify_Slim.Views
                 string authCode = await auth.RequestAuthCodeAsync(appId, appName, appVersion);
                 Debug.WriteLine($"Received authorization code: {authCode}");
 
+                TbYTMDesktopAuthcode.Text = $"AUTH CODE: {authCode}";
+                PnlYTMDesktopAuthcode.Visibility = Visibility.Visible;
+                Activate();
+
                 // Step 2: Request the token using the auth code
                 Debug.WriteLine("Requesting token...");
                 string token = await auth.RequestTokenAsync(appId, authCode);
                 Debug.WriteLine($"Received token: {token}");
-                if (!string.IsNullOrEmpty(token))
-                {
-                    TbYTMDesktopToken.Password = token;
-                    Settings.YTMDToken = token;
-                }
+                if (string.IsNullOrEmpty(token)) return;
+                TbYTMDesktopToken.Password = token;
+                Settings.YTMDToken = token;
+                await ((MainWindow)Application.Current.MainWindow)?.StartYtmdSocketIoClient()!;
             }
             catch (Exception ex)
             {

@@ -5,11 +5,10 @@
     xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+    xmlns:general="clr-namespace:Songify_Slim.Util.General"
     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     xmlns:local="clr-namespace:Songify_Slim.Properties"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:songifySlim="clr-namespace:Songify_Slim"
-    xmlns:userControls="clr-namespace:Songify_Slim.UserControls"
     Title="Songify"
     Width="588"
     Height="285"
@@ -130,6 +129,7 @@
                     Foreground="{DynamicResource MahApps.Brushes.FlyoutTitleForeground}" />
             </Grid>
         </ControlTemplate>
+        <general:CombineStringConverter x:Key="CombineStringConverter" />
     </controls:MetroWindow.Resources>
     <controls:MetroWindow.RightWindowCommands>
         <controls:WindowCommands ShowSeparators="False">
@@ -623,10 +623,24 @@
                             <Style TargetType="iconPacks:PackIconBootstrapIcons">
                                 <Style.Triggers>
                                     <Trigger Property="Foreground" Value="IndianRed">
-                                        <Setter Property="ToolTip" Value="Twitch Chat Bot: Not Connected" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Twitch Chat Bot: " />
+                                                    <Binding Source="{x:Static local:Resources.s_Disconnected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                     <Trigger Property="Foreground" Value="GreenYellow">
-                                        <Setter Property="ToolTip" Value="Twitch Chat Bot: Connected" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Twitch Chat Bot: " />
+                                                    <Binding Source="{x:Static local:Resources.s_Connected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -643,10 +657,24 @@
                             <Style TargetType="iconPacks:PackIconBootstrapIcons">
                                 <Style.Triggers>
                                     <Trigger Property="Foreground" Value="IndianRed">
-                                        <Setter Property="ToolTip" Value="Twitch API: Not Connected" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Twitch API: " />
+                                                    <Binding Source="{x:Static local:Resources.s_Disconnected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                     <Trigger Property="Foreground" Value="GreenYellow">
-                                        <Setter Property="ToolTip" Value="Twitch API: Connected" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Twitch API: " />
+                                                    <Binding Source="{x:Static local:Resources.s_Connected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -683,14 +711,38 @@
                         <iconPacks:PackIconBootstrapIcons.Style>
                             <Style TargetType="iconPacks:PackIconBootstrapIcons">
                                 <Style.Triggers>
+
+
+
                                     <Trigger Property="Foreground" Value="IndianRed">
-                                        <Setter Property="ToolTip" Value="Spotify: Not Connected" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Spotify: " />
+                                                    <Binding Source="{x:Static local:Resources.s_Disconnected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                     <Trigger Property="Foreground" Value="GreenYellow">
-                                        <Setter Property="ToolTip" Value="Spotify: Connected (Premium)" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Spotify (Premium): " />
+                                                    <Binding Source="{x:Static local:Resources.s_Connected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                     <Trigger Property="Foreground" Value="DarkOrange">
-                                        <Setter Property="ToolTip" Value="Spotify: Connected (Free)" />
+                                        <Setter Property="ToolTip">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource CombineStringConverter}">
+                                                    <Binding Path="." Source="Spotify (Free): " />
+                                                    <Binding Source="{x:Static local:Resources.s_Connected}" />
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -737,7 +789,10 @@
                     </Style>
                 </Border.Style>
                 <DockPanel HorizontalAlignment="Stretch" LastChildFill="False">
-                    <StatusBarItem x:Name="LblStatus" Foreground="{DynamicResource MahApps.Brushes.IdealForeground}">
+                    <StatusBarItem
+                        x:Name="LblStatus"
+                        Foreground="{DynamicResource MahApps.Brushes.IdealForeground}"
+                        Visibility="Collapsed">
                         <StatusBar />
                     </StatusBarItem>
                     <StatusBarItem

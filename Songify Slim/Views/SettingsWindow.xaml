@@ -351,7 +351,7 @@
                             Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Content="What to do on pause?" />
+                            Content="{x:Static local:Resources.sw_tcOutput_pause}" />
                         <!--<controls:ToggleSwitch
                             x:Name="ChbxCustomPause"
                             Grid.Row="4"
@@ -770,7 +770,7 @@
                                     Click="BtnLogInTwitchAlt_Click"
                                     Tag="main">
                                     <Button.Content>
-                                        <TextBlock Text="Doesn't work?" />
+                                        <TextBlock Text="{x:Static local:Resources.mw_menu_Twitch_dw}" />
                                     </Button.Content>
                                 </Button>
                             </StackPanel>
@@ -799,7 +799,7 @@
                                     Click="BtnLogInTwitchAlt_Click"
                                     Tag="bot">
                                     <Button.Content>
-                                        <TextBlock Text="Doesn't work?" />
+                                        <TextBlock Text="{x:Static local:Resources.mw_menu_Twitch_dw}" />
                                     </Button.Content>
                                 </Button>
                             </StackPanel>
@@ -1010,7 +1010,7 @@
             <TabItem
                 x:Name="TabItemTwitchReward"
                 Padding="20,0,0,0"
-                Header="Rewards"
+                Header="{x:Static local:Resources.Sw_Integtation_Tc_Rewards}"
                 Visibility="Visible">
                 <Border
                     Margin="10,0,0,0"
@@ -1431,7 +1431,7 @@
                 x:Name="TabItemTwitchSr"
                 Padding="20,0,0,0"
                 Header="SongRequest"
-                ToolTip="Song Requests"
+                ToolTip="{x:Static local:Resources.Sw_Integtation_Tc_SongRequests}"
                 Visibility="Visible">
                 <Border
                     Margin="10,0,0,0"
@@ -1487,7 +1487,7 @@
                                         SelectedIndex="0"
                                         SelectionChanged="Selector_OnSelectionChanged">
                                         <ComboBox.Items>
-                                            <ComboBoxItem Content="User Levels (Command)">
+                                            <ComboBoxItem Content="{x:Static local:Resources.sw_SpotifySr_UserLevelsCommand}">
                                                 <ComboBoxItem.Style>
                                                     <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
                                                         <Style.Triggers>
@@ -1505,7 +1505,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsCommandChecked"
-                                                    Content="Viewer"
+                                                    Content="{x:Static local:Resources.s_Viewer}"
                                                     Tag="0"
                                                     Unchecked="CbxUserLevelsCommandUnchecked" />
                                             </ComboBoxItem>
@@ -1516,7 +1516,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsCommandChecked"
-                                                    Content="Follower"
+                                                    Content="{x:Static local:Resources.s_Follower}"
                                                     Tag="1"
                                                     Unchecked="CbxUserLevelsCommandUnchecked" />
                                             </ComboBoxItem>
@@ -1527,7 +1527,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsCommandChecked"
-                                                    Content="Subscriber"
+                                                    Content="{x:Static local:Resources.s_Subscriber}"
                                                     Tag="2"
                                                     Unchecked="CbxUserLevelsCommandUnchecked" />
                                             </ComboBoxItem>
@@ -1538,7 +1538,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsCommandChecked"
-                                                    Content="VIP"
+                                                    Content="{x:Static local:Resources.s_VIP}"
                                                     Tag="3"
                                                     Unchecked="CbxUserLevelsCommandUnchecked" />
                                             </ComboBoxItem>
@@ -1549,7 +1549,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsCommandChecked"
-                                                    Content="Moderator"
+                                                    Content="{x:Static local:Resources.s_Moderator}"
                                                     Tag="4"
                                                     Unchecked="CbxUserLevelsCommandUnchecked" />
                                             </ComboBoxItem>
@@ -1569,7 +1569,7 @@
                                         SelectedIndex="0"
                                         SelectionChanged="Selector_OnSelectionChanged">
                                         <ComboBox.Items>
-                                            <ComboBoxItem Content="User Levels (Reward)">
+                                            <ComboBoxItem Content="{x:Static local:Resources.sw_SpotifySr_UserLevelsReward}">
                                                 <ComboBoxItem.Style>
                                                     <Style BasedOn="{StaticResource {x:Type ComboBoxItem}}" TargetType="ComboBoxItem">
                                                         <Style.Triggers>
@@ -1587,7 +1587,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsRewardChecked"
-                                                    Content="Viewer"
+                                                    Content="{x:Static local:Resources.s_Viewer}"
                                                     Tag="0"
                                                     Unchecked="CbxUserLevelsRewardUnchecked" />
                                             </ComboBoxItem>
@@ -1598,7 +1598,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsRewardChecked"
-                                                    Content="Follower"
+                                                    Content="{x:Static local:Resources.s_Follower}"
                                                     Tag="1"
                                                     Unchecked="CbxUserLevelsRewardUnchecked" />
                                             </ComboBoxItem>
@@ -1609,7 +1609,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsRewardChecked"
-                                                    Content="Subscriber"
+                                                    Content="{x:Static local:Resources.s_Subscriber}"
                                                     Tag="2"
                                                     Unchecked="CbxUserLevelsRewardUnchecked" />
                                             </ComboBoxItem>
@@ -1620,7 +1620,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsRewardChecked"
-                                                    Content="VIP"
+                                                    Content="{x:Static local:Resources.s_VIP}"
                                                     Tag="3"
                                                     Unchecked="CbxUserLevelsRewardUnchecked" />
                                             </ComboBoxItem>
@@ -1631,7 +1631,7 @@
                                                     Height="22"
                                                     Margin="1,0,0,0"
                                                     Checked="CbxUserLevelsRewardChecked"
-                                                    Content="Moderator"
+                                                    Content="{x:Static local:Resources.s_Moderator}"
                                                     Tag="4"
                                                     Unchecked="CbxUserLevelsRewardUnchecked" />
                                             </ComboBoxItem>
@@ -1841,60 +1841,10 @@
                     </Grid>
                 </Border>
             </TabItem>
-            <TabItem Padding="20,0,0,0" Header="Responses">
-                <Border
-                    Margin="10,0,0,0"
-                    BorderBrush="{DynamicResource MahApps.Brushes.Accent3}"
-                    BorderThickness="2,0,0,0">
-                    <Grid Margin="10,12,0,0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Label
-                            Grid.Row="0"
-                            Margin="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Content="{x:Static local:Resources.brw_Header}"
-                            Visibility="Collapsed" />
-                        <ScrollViewer
-                            Grid.Row="1"
-                            Margin="0,0,0,0"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch">
-                            <ContentControl
-                                x:Name="Cctrl"
-                                Margin="5,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                Content="ContentControl" />
-                        </ScrollViewer>
-                        <Border
-                            Grid.Row="2"
-                            Margin="-10,5,-10,0"
-                            VerticalAlignment="Bottom"
-                            BorderBrush="{DynamicResource MahApps.Brushes.Accent3}"
-                            BorderThickness="0,2,0,0">
-                            <StackPanel Orientation="Vertical">
-                                <TextBlock Margin="6,0,20,6" Text="Preview:" />
-                                <TextBox
-                                    x:Name="LblPreview"
-                                    Height="41"
-                                    Margin="6,0,20,6"
-                                    BorderBrush="White"
-                                    IsReadOnly="True"
-                                    TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
-            </TabItem>
             <TabItem
                 x:Name="TabItemTwitchBotCommands"
                 Padding="20,0,0,0"
-                Header="Commands">
+                Header="{x:Static local:Resources.brw_tc_Commands}">
                 <Border
                     Margin="10,0,0,0"
                     BorderBrush="{DynamicResource MahApps.Brushes.Accent3}"
@@ -2498,6 +2448,56 @@
                     </ScrollViewer>
                 </Border>
             </TabItem>
+            <TabItem Padding="20,0,0,0" Header="{x:Static local:Resources.brw_tc_Responses}">
+                <Border
+                    Margin="10,0,0,0"
+                    BorderBrush="{DynamicResource MahApps.Brushes.Accent3}"
+                    BorderThickness="2,0,0,0">
+                    <Grid Margin="10,12,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label
+                            Grid.Row="0"
+                            Margin="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Content="{x:Static local:Resources.brw_Header}"
+                            Visibility="Collapsed" />
+                        <ScrollViewer
+                            Grid.Row="1"
+                            Margin="0,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                            <ContentControl
+                                x:Name="Cctrl"
+                                Margin="5,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Content="ContentControl" />
+                        </ScrollViewer>
+                        <Border
+                            Grid.Row="2"
+                            Margin="-10,5,-10,0"
+                            VerticalAlignment="Bottom"
+                            BorderBrush="{DynamicResource MahApps.Brushes.Accent3}"
+                            BorderThickness="0,2,0,0">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Margin="6,0,20,6" Text="Preview:" />
+                                <TextBox
+                                    x:Name="LblPreview"
+                                    Height="41"
+                                    Margin="6,0,20,6"
+                                    BorderBrush="White"
+                                    IsReadOnly="True"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </TabItem>
             <TabItem Header="Spotify">
                 <Border
                     Margin="10,0,0,0"
@@ -2681,6 +2681,7 @@
                     <Grid Margin="10,16,0,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -2705,7 +2706,27 @@
                             x:Name="TbYTMDesktopToken"
                             Grid.Row="0"
                             Grid.Column="1"
-                            Margin="6,0"/>
+                            Margin="6,0" />
+                        <StackPanel
+                            x:Name="PnlYTMDesktopAuthcode"
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Margin="16"
+                            Orientation="Vertical">
+                            <TextBlock
+                                MaxWidth="400"
+                                HorizontalAlignment="Center"
+                                Text="{x:Static local:Resources.sw_YTMDesktop_disclaimer}"
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                x:Name="TbYTMDesktopAuthcode"
+                                HorizontalAlignment="Center"
+                                FontSize="36"
+                                Text="AUTH CODE:" />
+                        </StackPanel>
+
                     </Grid>
                 </Border>
             </TabItem>
