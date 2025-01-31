@@ -8,6 +8,7 @@ public class RequestObject
     public int Queueid { get; set; }
     [JsonProperty("uuid")]
     public string Uuid { get; set; }
+
     [JsonProperty("trackid")]
     public string Trackid { get; set; }
     [JsonProperty("artist")]
@@ -23,6 +24,15 @@ public class RequestObject
     [JsonProperty("albumcover")]
     public string Albumcover { get; set; }
 
+    [JsonProperty("playerType")]
+    public RequestPlayerType PlayerType { get; set; }
+
     public bool IsLiked { get; set; } = false;
 
+}
+
+public enum RequestPlayerType
+{
+    Spotify,
+    Youtube
 }

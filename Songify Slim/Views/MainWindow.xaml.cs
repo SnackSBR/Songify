@@ -174,12 +174,10 @@ namespace Songify_Slim.Views
             MenuItem item = (MenuItem)sender;
             if (item.Tag.ToString().Contains("Window"))
             {
-                if (!IsWindowOpen<HistoryWindow>())
-                {
-                    // Opens the 'History'-Window
-                    HistoryWindow hW = new() { Top = Top, Left = Left };
-                    hW.ShowDialog();
-                }
+                if (IsWindowOpen<HistoryWindow>()) return;
+                // Opens the 'History'-Window
+                HistoryWindow hW = new() { Top = Top, Left = Left };
+                hW.ShowDialog();
             }
             // Opens the Queue in the Browser
             else if (item.Tag.ToString().Contains("Browser"))
@@ -368,6 +366,27 @@ namespace Songify_Slim.Views
             SetupUiAndThemes();
             CheckAndNotifyConfigurationIssues();
             SetupDisclaimer();
+            SetupMotdTimer();
+
+            if (!Settings.UseOwnApp)
+            {
+                GrdDisclaimer.Visibility = Visibility.Collapsed;
+
+                MessageDialogResult result = await this.ShowMessageAsync(
+                    "Warning",
+                    "Songify now needs your own Spotify credentials (Client ID and Secret). Please follow the linked guide to set them up. This will help you avoid Spotify rate limits and ensure faster updates.",
+                    MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings()
+                    {
+                        AffirmativeButtonText = "Open Guide",
+                        NegativeButtonText = Properties.Resources.s_OK,
+                    }
+                );
+                if (result == MessageDialogResult.Affirmative)
+                    Process.Start(
+                    "https://github.com/songify-rocks/Songify/wiki/Setting-up-song-requests#spotify-setup");
+                Settings.UseOwnApp = true;
+            }
+
 
             bool internetAvailable = await WaitForInternetConnectionAsync();
 
@@ -397,21 +416,11 @@ namespace Songify_Slim.Views
                 }
             }
 
-            if (internetAvailable)
-            {
-                await HandleSpotifyInitializationAsync();
-                await HandleTwitchInitializationAsync();
-                await FinalSetupAndUpdatesAsync();
-                await StartYtmdSocketIoClient();
-            }
-            else
-            {
-                //Show a message to the user that the app can't run without internet connection and close the app after the user clicked ok
-                MessageBox.Show("Songify requires an internet connection to work properly. Please check your connection and restart the app.", "No Internet Connection", MessageBoxButton.OK, MessageBoxImage.Error);
-                Application.Current.Shutdown();
-            }
+            await HandleSpotifyInitializationAsync();
+            await HandleTwitchInitializationAsync();
+            await FinalSetupAndUpdatesAsync();
+            await StartYtmdSocketIoClient();
 
-            SetupMotdTimer();
         }
 
         public async Task StartYtmdSocketIoClient()
@@ -497,7 +506,7 @@ namespace Songify_Slim.Views
 
         private async void SetPSAs()
         {
-            PSAs = await WebHelper.GetPSA();
+            PSAs = await WebHelper.GetPsa();
             if (PSAs == null || PSAs.Count == 0)
             {
                 PnlMotds.Children.Clear();
@@ -1361,5 +1370,19 @@ namespace Songify_Slim.Views
                 wB.Show();
 			}
 		}
+
+        private void BtnMenuViewUserList_Click(object sender, RoutedEventArgs e)
+        {
+            //Check if a window of type Window_Userlist is open. Focus it if it is, if not open a new one
+            if (IsWindowOpen<Window_Userlist>()) return;
+            Window_Userlist wU = new() { Top = Top, Left = Left };
+            wU.Show();
+        }
+
+        private void BtnAppFolderClick(object sender, RoutedEventArgs e)
+        {
+            string direcotry = Directory.GetCurrentDirectory();
+            Process.Start(direcotry);
+        }
     }
 }

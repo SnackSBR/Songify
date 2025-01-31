@@ -88,6 +88,7 @@ namespace Songify_Slim.Util.Settings
             path ??= Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             IDeserializer deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
                 .Build();
 
             Configuration config = new();
@@ -230,8 +231,9 @@ namespace Songify_Slim.Util.Settings
         public bool BotOnlyWorkWhenLive { get; set; }
         public bool CustomPauseTextEnabled { get; set; }
         public bool DonationReminder { get; set; }
-        public bool DownloadCover { get; set; }
         public bool DownloadCanvas { get; set; }
+        public bool DownloadCover { get; set; }
+        public bool KeepAlbumCover { get; set; } = false;
         public bool LimitSrToPlaylist { get; set; }
         public bool MsgLoggingEnabled { get; set; }
         public bool OpenQueueOnStartup { get; set; }
@@ -270,6 +272,8 @@ namespace Songify_Slim.Util.Settings
         public int TwSrMaxReqFollower { get; set; } = 3;
         public int TwSrMaxReqModerator { get; set; } = 3;
         public int TwSrMaxReqSubscriber { get; set; } = 3;
+        public int TwSrMaxReqSubscriberT2 { get; set; } = 3;
+        public int TwSrMaxReqSubscriberT3 { get; set; } = 3;
         public int TwSrMaxReqVip { get; set; } = 3;
         public int TwSrPerUserCooldown { get; set; } = 0;
         public int TwSrUserLevel { get; set; } = 1;
@@ -299,83 +303,10 @@ namespace Songify_Slim.Util.Settings
         public string TwRewardGoalRewardId { get; set; } = "";
         public string TwRewardSkipId { get; set; } = "";
         public string Uuid { get; set; } = "";
-        public bool KeepAlbumCover { get; set; } = false;
-
         public string WebUserAgent = "Songify Data Provider";
         public string YTMDToken;
 		
 		public bool FulfillRedemption { get; set; }
         public List<string> GenreBlacklist { get; set; } = [];
-    }
-
-    public class Config
-    {
-        // Create fields for each setting in the config file
-        public bool AnnounceInChat { get; set; }
-        public bool AppendSpaces { get; set; }
-        public bool AutoClearQueue { get; set; }
-        public bool Autostart { get; set; }
-        public bool BotCmdNext { get; set; }
-        public bool BotCmdPos { get; set; }
-        public bool BotCmdSkip { get; set; }
-        public bool BotCmdSkipVote { get; set; }
-        public bool BotCmdSong { get; set; }
-        public bool CustomPauseTextEnabled { get; set; }
-        public bool DownloadCover { get; set; }
-        public bool MsgLoggingEnabled { get; set; }
-        public bool OpenQueueOnStartup { get; set; }
-        public bool SaveHistory { get; set; }
-        public bool SplitOutput { get; set; }
-        public bool Systray { get; set; }
-        public bool Telemetry { get; set; }
-        public bool TwAutoConnect { get; set; }
-        public bool TwSrCommand { get; set; }
-        public bool TwSrReward { get; set; }
-        public bool Upload { get; set; }
-        public bool UploadHistory { get; set; }
-        public bool UseOwnApp { get; set; }
-        public int BotCmdSkipVoteCount { get; set; }
-        public int MaxSongLength { get; set; }
-        public int PosX { get; set; }
-        public int PosY { get; set; }
-        public int SpaceCount { get; set; }
-        public int TwSrCooldown { get; set; }
-        public int TwSrMaxReq { get; set; }
-        public int TwSrMaxReqBroadcaster { get; set; }
-        public int TwSrMaxReqEveryone { get; set; }
-        public int TwSrMaxReqModerator { get; set; }
-        public int TwSrMaxReqSubscriber { get; set; }
-        public int TwSrMaxReqVip { get; set; }
-        public int TwSrUserLevel { get; set; }
-        public string AccessToken { get; set; }
-        public List<string> ArtistBlacklist { get; set; }
-        public string BotRespBlacklist { get; set; }
-        public string BotRespError { get; set; }
-        public string BotRespIsInQueue { get; set; }
-        public string BotRespLength { get; set; }
-        public string BotRespMaxReq { get; set; }
-        public string BotRespModSkip { get; set; }
-        public string BotRespNoSong { get; set; }
-        public string BotRespSuccess { get; set; }
-        public string BotRespVoteSkip { get; set; }
-        public string ClientId { get; set; }
-        public string ClientSecret { get; set; }
-        public string Color { get; set; }
-        public string CustomPauseText { get; set; }
-        public string Directory { get; set; }
-        public string Language { get; set; }
-        public string OutputString { get; set; }
-        public string OutputString2 { get; set; }
-        public string RefreshToken { get; set; }
-        public string SpotifyDeviceId { get; set; }
-        public string Theme { get; set; }
-        public string TwAcc { get; set; }
-        public string TwChannel { get; set; }
-        public string TwOAuth { get; set; }
-        public string TwRewardId { get; set; }
-        public List<string> UserBlacklist { get; set; }
-        public string Uuid { get; set; }
-        public bool FulfillRedemption { get; set; }
-        public List<string> GenreBlacklist { get; set; }
     }
 }

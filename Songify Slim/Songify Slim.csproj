@@ -179,6 +179,12 @@
     <Compile Include="UserControls\UC_PlaylistItem.xaml.cs">
       <DependentUpon>UC_PlaylistItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UserControls\UC_TwitchReward.xaml.cs">
+      <DependentUpon>UC_TwitchReward.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\UC_ViewerItem.xaml.cs">
+      <DependentUpon>UC_ViewerItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Util\BooleanToVisibilityConverter.cs" />
     <Compile Include="Util\General\CombineStringConverter.cs" />
     <Compile Include="Util\General\Enums.cs" />
@@ -190,6 +196,7 @@
     <Compile Include="Util\General\Utils.cs" />
     <Compile Include="Util\Settings\YamlTypeConverters.cs" />
     <Compile Include="Util\Songify\ApiClient.cs" />
+    <Compile Include="Util\Songify\TwitchApiHelper.cs" />
     <Compile Include="Util\Songify\YTMDesktop\SocketIoClient.cs" />
     <Compile Include="Util\Songify\YTMDesktop\YTMDApiClient.cs" />
     <Compile Include="Util\Songify\YTMDesktop\YTMDAuthentication.cs" />
@@ -343,6 +350,9 @@
     <Compile Include="Views\Window_UniversalDialog.xaml.cs">
       <DependentUpon>Window_UniversalDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Window_Userlist.xaml.cs">
+      <DependentUpon>Window_Userlist.xaml</DependentUpon>
+    </Compile>
     <Page Include="UserControls\PsaControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -352,6 +362,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UserControls\UC_PlaylistItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\UC_TwitchReward.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\UC_ViewerItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -424,6 +442,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Window_UniversalDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Window_Userlist.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
