@@ -235,7 +235,7 @@ namespace Songify_Slim.Util.Songify
             _currentState = ioa.RequestClientAuthorization();
         }
 
-        public static void BotConnect()
+        public static async void BotConnect()
         {
             try
             {
@@ -245,8 +245,7 @@ namespace Songify_Slim.Util.Songify
                     case { IsConnected: true }:
                         return;
                     case { IsConnected: false }:
-                        Client.Connect();
-                        Client.JoinChannel(Settings.Settings.TwChannel);
+                        await Client.ConnectAsync();
                         return;
                 }
 
@@ -266,21 +265,17 @@ namespace Songify_Slim.Util.Songify
 
                 // creates new connection based on the credentials in settings
                 ConnectionCredentials credentials = new(Settings.Settings.TwAcc, Settings.Settings.TwOAuth);
-                ClientOptions clientOptions = new()
-                {
-                    MessagesAllowedInPeriod = 750,
-                    ThrottlingPeriod = TimeSpan.FromSeconds(30),
-                };
+                ClientOptions clientOptions = new(new ReconnectionPolicy(30000, null), true, 1500, TwitchLib.Communication.Enums.ClientType.Chat);
                 WebSocketClient customClient = new(clientOptions);
-                Client = new TwitchClient(customClient);
-                Client.Initialize(credentials);
+                Client = new(customClient, TwitchLib.Client.Enums.ClientProtocol.WebSocket);
+                Client.Initialize(credentials, Settings.Settings.TwChannel);
 
                 Client.OnMessageReceived += Client_OnMessageReceived;
                 Client.OnConnected += Client_OnConnected;
                 Client.OnDisconnected += Client_OnDisconnected;
                 Client.OnJoinedChannel += ClientOnOnJoinedChannel;
                 Client.OnLeftChannel += ClientOnOnLeftChannel;
-                Client.Connect();
+                await Client.ConnectAsync();
 
                 // subscribes to the cooldown timer elapsed event for the command cooldown
                 CooldownTimer.Elapsed += CooldownTimer_Elapsed;
@@ -348,6 +343,7 @@ namespace Songify_Slim.Util.Songify
                         }
                     };
 
+                    TwitchApi.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions, AuthScopes.Moderator_Read_Followers];
                     TokenCheck = await TwitchApi.Auth.ValidateAccessTokenAsync(Settings.Settings.TwitchAccessToken);
 
                     if (TokenCheck == null)
@@ -506,9 +502,7 @@ namespace Songify_Slim.Util.Songify
 
                         if (Settings.Settings.TwitchUser == null) return;
                         // creates new connection based on the credentials in settings
-                        ConnectionCredentials credentials =
-                            new(Settings.Settings.TwitchUser.DisplayName,
-                                $"oauth:{Settings.Settings.TwitchAccessToken}");
+                        ConnectionCredentials credentials = new(Settings.Settings.TwitchUser.DisplayName, $"oauth:{Settings.Settings.TwitchAccessToken}");
                         ClientOptions clientOptions = new(new ReconnectionPolicy(30000, null), true, 1500, TwitchLib.Communication.Enums.ClientType.Chat);
                         WebSocketClient customClient = new(clientOptions);
                         _mainClient = new(customClient, TwitchLib.Client.Enums.ClientProtocol.WebSocket);
@@ -523,6 +517,11 @@ namespace Songify_Slim.Util.Songify
 
                     break;
             }
+        }
+
+        private static async Task _mainClient_OnConnected(object sender, TwitchLib.Client.Events.OnConnectedEventArgs e)
+        {
+            await _mainClient.JoinChannelAsync(Settings.Settings.TwChannel);
         }
 
         public static void ResetVotes()
@@ -1861,9 +1860,11 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static void ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
+        private static Task ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
         {
             Logger.LogStr($"TWITCH: Left channel {e.Channel}");
+
+            return Task.CompletedTask;
         }
 
         private static void CooldownTimer_Elapsed(object sender, ElapsedEventArgs e)
