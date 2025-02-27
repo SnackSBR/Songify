@@ -7,9 +7,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using ControlzEx.Standard;
 using Newtonsoft.Json;
 using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
+using YamlDotNet.Core.Tokens;
+using Error = Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models.Error;
 
 namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
 {
@@ -45,14 +48,13 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             {
                 AddHeaders(headers);
             }
-            using (HttpResponseMessage response = Task.Run(() => _client.GetAsync(url)).Result)
+
+            using HttpResponseMessage response = Task.Run(() => _client.GetAsync(url)).Result;
+            return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
             {
-                return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
-                {
-                    StatusCode = response.StatusCode,
-                    Headers = ConvertHeaders(response.Headers)
-                }, Task.Run(() => response.Content.ReadAsByteArrayAsync()).Result);
-            }
+                StatusCode = response.StatusCode,
+                Headers = ConvertHeaders(response.Headers)
+            }, Task.Run(() => response.Content.ReadAsByteArrayAsync()).Result);
         }
 
         public async Task<Tuple<ResponseInfo, byte[]>> DownloadRawAsync(string url, Dictionary<string, string> headers = null)
@@ -61,19 +63,17 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             {
                 AddHeaders(headers);
             }
-            using (HttpResponseMessage response = await _client.GetAsync(url).ConfigureAwait(false))
+
+            using HttpResponseMessage response = await _client.GetAsync(url).ConfigureAwait(false);
+            return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
             {
-                return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
-                {
-                    StatusCode = response.StatusCode,
-                    Headers = ConvertHeaders(response.Headers)
-                }, await response.Content.ReadAsByteArrayAsync());
-            }
+                StatusCode = response.StatusCode,
+                Headers = ConvertHeaders(response.Headers)
+            }, await response.Content.ReadAsByteArrayAsync());
         }
 
         public Tuple<ResponseInfo, T> DownloadJson<T>(string url, Dictionary<string, string> headers = null)
         {
-
             Tuple<ResponseInfo, string> response = Download(url, headers);
             try
             {
@@ -86,7 +86,7 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
                     File.Create("data.json").Close();
                 File.WriteAllText("data.json", response.Item2);
                 Logger.LogExc(error);
-                IOManager.WriteOutput($"{GlobalObjects.RootDirectory}/json.txt", response.Item2);
+                IoManager.WriteOutput($"{GlobalObjects.RootDirectory}/json.txt", response.Item2);
                 return new Tuple<ResponseInfo, T>(response.Item1, JsonConvert.DeserializeObject<T>(string.Format(UnknownErrorJson, error.Message), JsonSettings));
             }
         }
@@ -103,7 +103,7 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             {
                 Logger.LogStr("SPOTIFY API:" + url);
                 Logger.LogExc(error);
-                IOManager.WriteOutput($"{GlobalObjects.RootDirectory}/json.txt", response.Item2);
+                IoManager.WriteOutput($"{GlobalObjects.RootDirectory}/json.txt", response.Item2);
 
                 string safeErrorMessage = error.Message
                     .Replace("{", "{{")
@@ -141,14 +141,12 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             {
                 Content = new StringContent(body, _encoding)
             };
-            using (HttpResponseMessage response = Task.Run(() => _client.SendAsync(message)).Result)
+            using HttpResponseMessage response = Task.Run(() => _client.SendAsync(message)).Result;
+            return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
             {
-                return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
-                {
-                    StatusCode = response.StatusCode,
-                    Headers = ConvertHeaders(response.Headers)
-                }, Task.Run(() => response.Content.ReadAsByteArrayAsync()).Result);
-            }
+                StatusCode = response.StatusCode,
+                Headers = ConvertHeaders(response.Headers)
+            }, Task.Run(() => response.Content.ReadAsByteArrayAsync()).Result);
         }
 
         public async Task<Tuple<ResponseInfo, byte[]>> UploadRawAsync(string url, string body, string method, Dictionary<string, string> headers = null)
@@ -162,14 +160,19 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             {
                 Content = new StringContent(body, _encoding)
             };
-            using (HttpResponseMessage response = await _client.SendAsync(message))
+            using HttpResponseMessage response = await _client.SendAsync(message);
+            return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
             {
-                return new Tuple<ResponseInfo, byte[]>(new ResponseInfo
-                {
-                    StatusCode = response.StatusCode,
-                    Headers = ConvertHeaders(response.Headers)
-                }, await response.Content.ReadAsByteArrayAsync());
-            }
+                StatusCode = response.StatusCode,
+                Headers = ConvertHeaders(response.Headers)
+            }, await response.Content.ReadAsByteArrayAsync());
+        }
+
+        private bool IsJson(string input)
+        {
+            input = input.Trim();
+            return (input.StartsWith("{") && input.EndsWith("}")) ||
+                   (input.StartsWith("[") && input.EndsWith("]"));
         }
 
         public Tuple<ResponseInfo, T> UploadJson<T>(string url, string body, string method, Dictionary<string, string> headers = null)
@@ -177,11 +180,35 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             Tuple<ResponseInfo, string> response = Upload(url, body, method, headers);
             try
             {
-                return new Tuple<ResponseInfo, T>(response.Item1, JsonConvert.DeserializeObject<T>(response.Item2, JsonSettings));
+                if (IsJson(response.Item2))
+                {
+                    // If it's valid JSON, deserialize as usual.
+                    T result = JsonConvert.DeserializeObject<T>(response.Item2, JsonSettings);
+                    return new Tuple<ResponseInfo, T>(response.Item1, result);
+                }
+                else
+                {
+                    // Non-JSON response. Spotify returns a plain string sometimes.
+                    // If the status code is OK we assume it's a valid, non-error response.
+                    // If not, you might consider assigning the text to an error message if T supports it.
+                    T result = Activator.CreateInstance<T>();
+
+                    // Optional: if you have an error property on T and the status code indicates a problem,
+                    // you can assign the plain text as an error message.
+                    if (response.Item1.StatusCode != HttpStatusCode.OK && result is ErrorResponse errorResponse)
+                    {
+                        errorResponse.Error = new Error { Message = response.Item2 };
+                    }
+
+                    return new Tuple<ResponseInfo, T>(response.Item1, result);
+                }
             }
             catch (JsonException error)
             {
-                return new Tuple<ResponseInfo, T>(response.Item1, JsonConvert.DeserializeObject<T>(string.Format(UnknownErrorJson, error.Message), JsonSettings));
+                // If deserialization fails, create a fallback error instance.
+                string errorJson = string.Format(UnknownErrorJson, error.Message);
+                T fallbackResult = JsonConvert.DeserializeObject<T>(errorJson, JsonSettings);
+                return new Tuple<ResponseInfo, T>(response.Item1, fallbackResult);
             }
         }
 
@@ -190,11 +217,35 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
             Tuple<ResponseInfo, string> response = await UploadAsync(url, body, method, headers).ConfigureAwait(false);
             try
             {
-                return new Tuple<ResponseInfo, T>(response.Item1, JsonConvert.DeserializeObject<T>(response.Item2, JsonSettings));
+                if (IsJson(response.Item2))
+                {
+                    // If it's valid JSON, deserialize as usual.
+                    T result = JsonConvert.DeserializeObject<T>(response.Item2, JsonSettings);
+                    return new Tuple<ResponseInfo, T>(response.Item1, result);
+                }
+                else
+                {
+                    // Non-JSON response. Spotify returns a plain string sometimes.
+                    // If the status code is OK we assume it's a valid, non-error response.
+                    // If not, you might consider assigning the text to an error message if T supports it.
+                    T result = Activator.CreateInstance<T>();
+
+                    // Optional: if you have an error property on T and the status code indicates a problem,
+                    // you can assign the plain text as an error message.
+                    if (response.Item1.StatusCode != HttpStatusCode.OK && result is ErrorResponse errorResponse)
+                    {
+                        errorResponse.Error = new Error { Message = response.Item2 };
+                    }
+
+                    return new Tuple<ResponseInfo, T>(response.Item1, result);
+                }
             }
             catch (JsonException error)
             {
-                return new Tuple<ResponseInfo, T>(response.Item1, JsonConvert.DeserializeObject<T>(string.Format(UnknownErrorJson, error.Message), JsonSettings));
+                // If deserialization fails, create a fallback error instance.
+                string errorJson = string.Format(UnknownErrorJson, error.Message);
+                T fallbackResult = JsonConvert.DeserializeObject<T>(errorJson, JsonSettings);
+                return new Tuple<ResponseInfo, T>(response.Item1, fallbackResult);
             }
         }
 
@@ -206,7 +257,7 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
 
         private static WebHeaderCollection ConvertHeaders(HttpResponseHeaders headers)
         {
-            WebHeaderCollection newHeaders = new();
+            WebHeaderCollection newHeaders = [];
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in headers)
             {
                 foreach (string headerValue in headerPair.Value)

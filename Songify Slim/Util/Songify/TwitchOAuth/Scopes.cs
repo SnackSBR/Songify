@@ -17,8 +17,8 @@ namespace Songify_Slim.Util.Songify.TwitchOAuth
     {
         public static string[] GetScopes()
         {
-            List<string> s = new()
-            {
+            List<string> s =
+            [
                 "channel:manage:redemptions",
                 "channel:moderate",
                 "channel:read:redemptions",
@@ -36,6 +36,8 @@ namespace Songify_Slim.Util.Songify.TwitchOAuth
                 "moderator:read:chat_settings",
                 "moderator:read:chatters",
                 "moderator:read:followers",
+                "moderation:read",
+                "channel:read:vips"
                 //s.Add("user:read:follows");
                 //s.Add("user:read:subscriptions");
                 //s.Add("analytics:read:extensions");
@@ -64,12 +66,12 @@ namespace Songify_Slim.Util.Songify.TwitchOAuth
                 //s.Add("user:read:blocked_users");
                 //s.Add("user:read:broadcast");
                 //s.Add("user:read:email");
-            };
+            ];
 
             //s.Add("whispers:read");
             //s.Add("whispers:edit");
 
-            return s.ToArray();
+            return [.. s];
         }
     }
 }

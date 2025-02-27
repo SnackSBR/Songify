@@ -1,36 +1,32 @@
-using MahApps.Metro.IconPacks;
-using Songify_Slim.Models;
-using Songify_Slim.Util.General;
-using Songify_Slim.Views;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using MahApps.Metro.IconPacks;
+using Songify_Slim.Models;
+using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Auth;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Enums;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
+using Songify_Slim.Views;
 using Timer = System.Timers.Timer;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
-using Unosquare.Swan.Formatters;
-using System.Linq;
-using System.Text.Encodings.Web;
-using System.Web.Util;
-using System.Windows.Forms;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
-namespace Songify_Slim.Util.Songify
+namespace Songify_Slim.Util.Spotify
 {
     // This class handles everything regarding Spotify-API integration
     public static class SpotifyApiHandler
     {
-        private static PlaylistInfo playlistInfo;
+        private static PlaylistInfo _playlistInfo;
         public static SpotifyWebAPI Spotify;
         private static Token _lastToken;
         public static bool Authed;
@@ -159,14 +155,12 @@ namespace Songify_Slim.Util.Songify
                                     "Spotify Premium is required to perform song requests. This is a limitation by Spotify, not by us.",
                                     "Spotify Premium required", MessageBoxButton.OK, MessageBoxImage.Warning);
                             }));
-
                     }
                     catch (Exception e)
                     {
                         Logger.LogStr("Error while saving Spotify tokens");
                         Logger.LogExc(e);
                     }
-
                 };
 
                 // automatically refreshes the token after it expires
@@ -268,7 +262,7 @@ namespace Songify_Slim.Util.Songify
                         FullPlaylist playlist = Spotify.GetPlaylist(context.Context.Uri.Split(':')[2]);
                         if (playlist != null || !GlobalObjects.IsObjectDefault(playlist))
                         {
-                            playlistInfo = new PlaylistInfo
+                            _playlistInfo = new PlaylistInfo
                             {
                                 Name = playlist.Name,
                                 Id = playlist.Id,
@@ -283,7 +277,7 @@ namespace Songify_Slim.Util.Songify
             catch (Exception)
             {
                 // ignored because it's not important if the playlist info can't be fetched
-                playlistInfo = null;
+                _playlistInfo = null;
             }
 
             return new TrackInfo
@@ -298,7 +292,7 @@ namespace Songify_Slim.Util.Songify
                 DurationPercentage = (int)percentage,
                 DurationTotal = (int)context.Item.DurationMs,
                 Progress = context.ProgressMs,
-                Playlist = playlistInfo,
+                Playlist = _playlistInfo,
                 FullArtists = context.Item.Artists
             };
         }
@@ -343,7 +337,6 @@ namespace Songify_Slim.Util.Songify
                 Logger.LogExc(e);
                 return null;
             }
-
         }
 
         public static async Task<FullTrack> GetTrack(string id)
@@ -351,7 +344,7 @@ namespace Songify_Slim.Util.Songify
             try
             {
                 FullTrack x = await Spotify.GetTrackAsync(id, "");
-                Debug.WriteLine(Json.Serialize(x));
+                //Debug.WriteLine(Json.Serialize(x));
                 return x;
             }
             catch (Exception e)
@@ -359,7 +352,6 @@ namespace Songify_Slim.Util.Songify
                 Logger.LogExc(e);
                 return null;
             }
-
         }
 
         public static SearchItem FindTrack(string searchQuery)
@@ -413,43 +405,14 @@ namespace Songify_Slim.Util.Songify
                         $"spotify:track:{trackId}");
                     return x == null || x.HasError();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     Logger.LogStr("Error adding song to playlist");
+                    Logger.LogExc(ex);
                     return true;
                 }
             }
             return false;
-        }
-
-        private static int LevenshteinDistance(string source, string target)
-        {
-            if (string.IsNullOrEmpty(source))
-                return string.IsNullOrEmpty(target) ? 0 : target.Length;
-
-            if (string.IsNullOrEmpty(target))
-                return source.Length;
-
-            int sourceLength = source.Length;
-            int targetLength = target.Length;
-
-            int[,] distance = new int[sourceLength + 1, targetLength + 1];
-
-            for (int i = 0; i <= sourceLength; distance[i, 0] = i++) ;
-            for (int j = 0; j <= targetLength; distance[0, j] = j++) ;
-
-            for (int i = 1; i <= sourceLength; i++)
-            {
-                for (int j = 1; j <= targetLength; j++)
-                {
-                    int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-                    distance[i, j] = Math.Min(
-                        Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1),
-                        distance[i - 1, j - 1] + cost);
-                }
-            }
-
-            return distance[sourceLength, targetLength];
         }
 
         public static async Task<ErrorResponse> SkipSong()
@@ -457,7 +420,6 @@ namespace Songify_Slim.Util.Songify
             try
             {
                 return await Spotify.SkipPlaybackToNextAsync();
-
             }
             catch (Exception)
             {

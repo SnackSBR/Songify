@@ -2,6 +2,7 @@
 using Songify_Slim.Views;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +15,11 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using static System.Convert;
 using Application = System.Windows.Application;
+using static Songify_Slim.Util.Settings.YamlTypeConverters;
+using Markdig.Wpf;
+using Songify_Slim.Models;
+using Songify_Slim.Util.Songify;
+using static Songify_Slim.Util.General.Enums;
 
 namespace Songify_Slim.Util.Settings
 {
@@ -23,7 +29,172 @@ namespace Songify_Slim.Util.Settings
     /// </summary>
     internal class ConfigHandler
     {
-        public static void WriteConfig(Enums.ConfigTypes configType, object o, string path = null, bool isBackup = false)
+        public static List<TwitchCommand> DefaultCommands { get; set; } =
+       [
+           new()
+            {
+                CommandType = CommandType.SongRequest,
+                Trigger = "ssr",
+                Response = "{artist} - {title} requested by @{user} has been added to the queue.",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+           new()
+            {
+                CommandType = CommandType.Next,
+                Trigger = "next",
+                Response = "@{user} {song}",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Primary,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Play,
+                Trigger = "play",
+                Response = "Playback resumed.",
+                IsEnabled = false,
+                AllowedUserLevels = [6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Pause,
+                Trigger = "pause",
+                Response = "Playback stopped.",
+                IsEnabled = false,
+                AllowedUserLevels = [6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Position,
+                Trigger = "pos",
+                Response = "@{user} {songs}{pos} {song}{/songs}",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Queue,
+                Trigger = "queue",
+                Response = "{queue}",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Remove,
+                Trigger = "remove",
+                Response = "{user} your previous request ({song}) will be skipped.",
+                IsEnabled = false,
+                AllowedUserLevels = [0,1,2,3,4,5,6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Skip,
+                Trigger = "skip",
+                Response = "@{user} skipped the current song.",
+                IsEnabled = false,
+                AllowedUserLevels = [6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Voteskip,
+                Trigger = "voteskip",
+                Response = "@{user} voted to skip the current song. ({votes})",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>
+                {
+                    {"SkipCount", 5}
+                }
+            },
+
+            new()
+            {
+                CommandType = CommandType.Song,
+                Trigger = "song",
+                Response = "@{user} {title} by {single_artist} {{requested by @{req}}}",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Songlike,
+                Trigger = "songlike",
+                Response = "The Song {song} has been added to the playlist {playlist}.",
+                IsEnabled = false,
+                AllowedUserLevels = [6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            },
+
+            new()
+            {
+                CommandType = CommandType.Volume,
+                Trigger = "vol",
+                Response = "Spotify volume at {vol}%",
+                IsEnabled = false,
+                AllowedUserLevels = [6],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>
+                {
+                    {"VolumeSetResponse", "Spotify volume set to {vol}%"}
+                }
+            },
+
+            new()
+            {
+                CommandType = CommandType.Commands,
+                Trigger = "cmds",
+                Response = "Active Songify commands: {commands}",
+                IsEnabled = false,
+                AllowedUserLevels = [0, 1, 2, 3, 4, 5, 6,],
+                IsAnnouncement = false,
+                AnnouncementColor = AnnouncementColor.Blue,
+                CustomProperties = new Dictionary<string, object>()
+            }
+       ];
+
+        public static void WriteConfig(ConfigTypes configType, object o, string path = null, bool isBackup = false)
         {
             path ??= Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             ISerializer serializer = new SerializerBuilder()
@@ -34,35 +205,40 @@ namespace Songify_Slim.Util.Settings
 
             switch (configType)
             {
-                case Enums.ConfigTypes.SpotifyCredentials:
+                case ConfigTypes.SpotifyCredentials:
                     path += "/SpotifyCredentials" + fileEnding;
                     yaml = serializer.Serialize(o as SpotifyCredentials ?? throw new InvalidOperationException());
                     break;
-                case Enums.ConfigTypes.TwitchCredentials:
+
+                case ConfigTypes.TwitchCredentials:
                     path += "/TwitchCredentials" + fileEnding;
                     yaml = serializer.Serialize(o as TwitchCredentials ?? throw new InvalidOperationException());
                     break;
-                case Enums.ConfigTypes.BotConfig:
+
+                case ConfigTypes.BotConfig:
                     path += "/BotConfig" + fileEnding;
                     yaml = serializer.Serialize(o as BotConfig ?? throw new InvalidOperationException());
                     break;
-                case Enums.ConfigTypes.AppConfig:
-                    try
-                    {
-                        path += "/AppConfig" + fileEnding;
-                        yaml = serializer.Serialize(o as AppConfig ?? throw new InvalidOperationException());
-                    }
-                    catch (Exception)
-                    {
-                        //Console.WriteLine(e);
-                        return;
-                    }
+
+                case ConfigTypes.AppConfig:
+
+                    path += "/AppConfig" + fileEnding;
+                    yaml = serializer.Serialize(o as AppConfig ?? throw new InvalidOperationException());
+
                     break;
+
+                case ConfigTypes.TwitchCommands:
+                    path += "/TwitchCommands" + fileEnding;
+                    Debug.WriteLine(o);
+                    yaml = serializer.Serialize(o as TwitchCommands ?? throw new InvalidOperationException());
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(configType), configType, null);
             }
             File.WriteAllText(path, yaml);
         }
+
         private static T LoadOrCreateConfig<T>(string path, string fileName, IDeserializer deserializer) where T : new()
         {
             string yamlPath = $@"{path}\{fileName}.yaml";
@@ -72,15 +248,10 @@ namespace Songify_Slim.Util.Settings
             {
                 return deserializer.Deserialize<T>(File.ReadAllText(yamlPath));
             }
-            else if (File.Exists(bakPath))
-            {
-                return deserializer.Deserialize<T>(File.ReadAllText(bakPath));
-            }
-            else
-            {
+
+            return File.Exists(bakPath) ? deserializer.Deserialize<T>(File.ReadAllText(bakPath)) :
                 // Return a new instance with default values already set
-                return new T();
-            }
+                new T();
         }
 
         public static void ReadConfig(string path = null)
@@ -88,27 +259,42 @@ namespace Songify_Slim.Util.Settings
             path ??= Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             IDeserializer deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithTypeConverter(new SingleStringToListConverter())
                 .IgnoreUnmatchedProperties()
                 .Build();
 
             Configuration config = new();
 
-            foreach (Enums.ConfigTypes configType in (Enums.ConfigTypes[])Enum.GetValues(typeof(Enums.ConfigTypes)))
+            foreach (ConfigTypes configType in (ConfigTypes[])Enum.GetValues(typeof(ConfigTypes)))
             {
                 switch (configType)
                 {
-                    case Enums.ConfigTypes.SpotifyCredentials:
+                    case ConfigTypes.SpotifyCredentials:
                         config.SpotifyCredentials = LoadOrCreateConfig<SpotifyCredentials>(path, "SpotifyCredentials", deserializer);
                         break;
-                    case Enums.ConfigTypes.TwitchCredentials:
+
+                    case ConfigTypes.TwitchCredentials:
                         config.TwitchCredentials = LoadOrCreateConfig<TwitchCredentials>(path, "TwitchCredentials", deserializer);
                         break;
-                    case Enums.ConfigTypes.BotConfig:
+
+                    case ConfigTypes.BotConfig:
                         config.BotConfig = LoadOrCreateConfig<BotConfig>(path, "BotConfig", deserializer);
                         break;
-                    case Enums.ConfigTypes.AppConfig:
+
+                    case ConfigTypes.AppConfig:
                         config.AppConfig = LoadOrCreateConfig<AppConfig>(path, "AppConfig", deserializer);
                         break;
+
+                    case ConfigTypes.TwitchCommands:
+                        config.TwitchCommands = LoadOrCreateConfig<TwitchCommands>(path, "TwitchCommands", deserializer);
+
+                        if (config.TwitchCommands.Commands.Count == 0)
+                        {
+                            config.TwitchCommands.Commands = DefaultCommands;
+                        }
+
+                        break;
+
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -119,22 +305,22 @@ namespace Songify_Slim.Util.Settings
 
         public static string GenerateAccessKey()
         {
-            string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_~.";
-            string key = new(Enumerable.Repeat(allowedChars, 1)
+            const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_~.";
+            string key = new([.. Enumerable.Repeat(allowedChars, 1)
                 .SelectMany(s => s)
                 .Take(128)
-                .OrderBy(s => Guid.NewGuid())
-                .ToArray());
+                .OrderBy(_ => Guid.NewGuid())]);
 
             return key;
         }
 
         public static void WriteAllConfig(Configuration config, string path = null, bool isBackup = false)
         {
-            WriteConfig(Enums.ConfigTypes.AppConfig, config.AppConfig, path, isBackup);
-            WriteConfig(Enums.ConfigTypes.BotConfig, config.BotConfig, path, isBackup);
-            WriteConfig(Enums.ConfigTypes.SpotifyCredentials, config.SpotifyCredentials, path, isBackup);
-            WriteConfig(Enums.ConfigTypes.TwitchCredentials, config.TwitchCredentials, path, isBackup);
+            WriteConfig(ConfigTypes.AppConfig, config.AppConfig, path, isBackup);
+            WriteConfig(ConfigTypes.BotConfig, config.BotConfig, path, isBackup);
+            WriteConfig(ConfigTypes.SpotifyCredentials, config.SpotifyCredentials, path, isBackup);
+            WriteConfig(ConfigTypes.TwitchCredentials, config.TwitchCredentials, path, isBackup);
+            WriteConfig(ConfigTypes.TwitchCommands, config.TwitchCommands, path, isBackup);
         }
     }
 
@@ -144,6 +330,7 @@ namespace Songify_Slim.Util.Settings
         public SpotifyCredentials SpotifyCredentials { get; set; }
         public TwitchCredentials TwitchCredentials { get; set; }
         public BotConfig BotConfig { get; set; }
+        public TwitchCommands TwitchCommands { get; set; }
     }
 
     public class SpotifyCredentials
@@ -167,6 +354,7 @@ namespace Songify_Slim.Util.Settings
         public User TwitchUser { get; set; }
         public string TwitchBotToken { get; set; } = "";
         public User BotUser { get; set; }
+        public string TwitchUserColor { get; set; }
     }
 
     public class BotConfig
@@ -182,9 +370,14 @@ namespace Songify_Slim.Util.Settings
         public bool BotCmdSonglike { get; set; }
         public bool BotCmdVol { get; set; }
         public bool BotCmdVolIgnoreMod { get; set; }
+        public bool BotCmdCommands { get; set; }
         public bool ChatLiveStatus { get; set; }
         public bool OnlyWorkWhenLive { get; set; }
         public int BotCmdSkipVoteCount { get; set; } = 5;
+        public string BotCmdPlayPauseTrigger { get; set; } = "!play, !pause";
+        public string BotCmdSkipVoteTrigger { get; set; } = "!voteskip";
+        public string BotCmdVolTrigger { get; set; } = "!vol";
+        public string BotCmdCommandsTrigger { get; set; } = "!songcommands";
         public string BotCmdNextTrigger { get; set; } = "next";
         public string BotCmdPosTrigger { get; set; } = "pos";
         public string BotCmdQueueTrigger { get; set; } = "queue";
@@ -215,6 +408,59 @@ namespace Songify_Slim.Util.Settings
         public string BotRespUnavailable { get; set; } = "The Song {song} is not available in the streamers country.";
         public string BotRespVoteSkip { get; set; } = "@{user} voted to skip the current song. ({votes})";
         public string BotRespUserCooldown { get; set; } = "@{user} you have to wait {cd} before you can request a song again.";
+
+        public string BotRespUserLevelTooLowCommand { get; set; } =
+            "Sorry, only {userlevel} or higher can request songs using the command.";
+
+        public string BotRespUserLevelTooLowReward { get; set; } = "Sorry, only {userlevel} or higher can request songs using the reward.";
+    }
+
+    public class TwitchCommands
+    {
+        public List<TwitchCommand> Commands { get; set; } = ConfigHandler.DefaultCommands;
+    }
+
+    public class BotCommandInfo
+    {
+        public string CommandName { get; set; }
+        public string Trigger { get; set; }
+    }
+
+    public static class BotConfigExtensions
+    {
+        /// <summary>
+        /// Returns a list of bot command names (the bool property name) that are enabled (true)
+        /// along with their corresponding trigger (if one exists).
+        /// </summary>
+        public static IEnumerable<BotCommandInfo> GetAllBotCommands(BotConfig config, bool onlyEnabled = false)
+        {
+            Type type = typeof(BotConfig);
+
+            // Get all public instance properties that are booleans and start with "BotCmd"
+            IEnumerable<PropertyInfo> boolProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.PropertyType == typeof(bool) && p.Name.StartsWith("BotCmd"));
+
+            foreach (PropertyInfo boolProp in boolProperties)
+            {
+                bool enabled = (bool)boolProp.GetValue(config);
+                if (onlyEnabled)
+                    if (!enabled) continue;
+                // Construct the expected trigger property name (e.g., BotCmdNext -> BotCmdNextTrigger)
+                string triggerPropName = boolProp.Name + "Trigger";
+                PropertyInfo triggerProp = type.GetProperty(triggerPropName);
+                string triggerValue = triggerProp != null ? (string)triggerProp.GetValue(config) : null;
+                if (triggerValue != null && triggerValue.Contains("!"))
+                {
+                    triggerValue = triggerValue.Replace("!", "");
+                }
+
+                yield return new BotCommandInfo
+                {
+                    CommandName = boolProp.Name,
+                    Trigger = triggerValue
+                };
+            }
+        }
     }
 
     public class AppConfig
@@ -252,7 +498,7 @@ namespace Songify_Slim.Util.Settings
         public bool UploadHistory { get; set; }
         public bool UseDefaultBrowser { get; set; }
         public bool UseOwnApp { get; set; }
-        public Enums.PauseOptions PauseOption { get; set; } = Enums.PauseOptions.Nothing;
+        public PauseOptions PauseOption { get; set; } = PauseOptions.Nothing;
         public int ChromeFetchRate { get; set; } = 1;
         public int FontSize { get; set; } = 22;
         public int FontsizeQueue { get; set; } = 12;
@@ -285,6 +531,7 @@ namespace Songify_Slim.Util.Settings
         public List<int> UserLevelsReward { get; set; } = [0, 1, 2, 3];
         public List<string> ArtistBlacklist { get; set; } = [];
         public List<string> TwRewardId { get; set; } = [];
+        public List<string> TwRewardSkipId { get; set; } = [];
         public List<string> UserBlacklist { get; set; } = [];
         public List<TrackItem> SongBlacklist { get; set; } = [];
         public string AccessKey { get; set; } = ConfigHandler.GenerateAccessKey();
@@ -301,8 +548,11 @@ namespace Songify_Slim.Util.Settings
         public string SpotifySongLimitPlaylist { get; set; } = "";
         public string Theme { get; set; } = "Light";
         public string TwRewardGoalRewardId { get; set; } = "";
-        public string TwRewardSkipId { get; set; } = "";
         public string Uuid { get; set; } = "";
+        public bool ShowUserLevelBadges { get; set; } = true;
+        public List<int> UnlimitedSrUserlevelsReward { get; set; }
+        public List<int> UnlimitedSrUserlevelsCommand { get; set; }
+
         public string WebUserAgent = "Songify Data Provider";
         public string YTMDToken;
 		

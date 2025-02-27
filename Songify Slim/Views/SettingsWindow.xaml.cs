@@ -8,6 +8,7 @@ using Songify_Slim.Util.Songify;
 using Songify_Slim.Util.Songify.TwitchOAuth;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -19,7 +20,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Songify_Slim.Util.Songify.YTMDesktop;
@@ -32,14 +32,16 @@ using CheckBox = System.Windows.Controls.CheckBox;
 using Clipboard = System.Windows.Clipboard;
 using ComboBox = System.Windows.Controls.ComboBox;
 using Image = Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models.Image;
-using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MenuItem = System.Windows.Controls.MenuItem;
 using NumericUpDown = MahApps.Metro.Controls.NumericUpDown;
 using TextBox = System.Windows.Controls.TextBox;
 using File = System.IO.File;
-using System.Drawing;
+using System.Windows.Navigation;
+using Songify_Slim.Models;
+using Songify_Slim.Util.Spotify;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
+using static Songify_Slim.App;
 
 namespace Songify_Slim.Views
 {
@@ -49,7 +51,7 @@ namespace Songify_Slim.Views
         private readonly bool _appIdInitialValue = Settings.UseOwnApp;
         private readonly FolderBrowserDialog _fbd = new();
         private Window _mW;
-
+        private Window_ResponseParams _wRp;
         private Dictionary<string, string> _supportedLanguages = new()
         {
             { "en", "English" },
@@ -67,7 +69,6 @@ namespace Songify_Slim.Views
         public Window_Settings()
         {
             InitializeComponent();
-            Title = Properties.Resources.mw_menu_Settings;
             if (Settings.Language == "en") return;
             Width = MinWidth = 830;
         }
@@ -91,6 +92,16 @@ namespace Songify_Slim.Views
                         break;
                 }
             }
+
+            //LbCommands.ItemsSource = Settings.Commands;
+
+            StackCommands.Children.Clear();
+            foreach (TwitchCommand command in Settings.Commands.OrderBy(cmd => cmd.CommandType))
+            {
+                bool showBottomBorder = command != Settings.Commands.OrderBy(cmd => cmd.CommandType).Last();
+                StackCommands.Children.Add(new UC_CommandItem(command) { ShowBottomBorder = showBottomBorder });
+            }
+
 
             NudMaxReq.Value = Settings.TwSrMaxReqEveryone;
             CbxUserLevelsMaxReq.SelectionChanged += CbxUserLevelsMaxReq_SelectionChanged;
@@ -131,7 +142,7 @@ namespace Songify_Slim.Views
             TxtbxCustompausetext.Text = Settings.CustomPauseText;
             TxtbxOutputformat.Text = Settings.OutputString;
             TxtbxOutputformat2.Text = Settings.OutputString2;
-            TbYTMDesktopToken.Password = Settings.YTMDToken;
+            TbYTMDesktopToken.Password = Settings.YtmdToken;
             CbxUserLevels.SelectedIndex = Settings.TwSrUserLevel == -1 ? 0 : Settings.TwSrUserLevel;
             NudServerPort.Value = Settings.WebServerPort;
             tgl_KeepCover.IsOn = Settings.KeepAlbumCover;
@@ -158,48 +169,14 @@ namespace Songify_Slim.Views
             ComboboxRedirectPort.SelectedItem = Settings.TwitchRedirectPort;
             ComboboxfetchPort.SelectedItem = Settings.TwitchFetchPort;
             Cctrl.Content = new UcBotResponses();
-            TglBotcmdPos.IsOn = Settings.BotCmdPos;
-            TglBotcmdSong.IsOn = Settings.BotCmdSong;
-            TglBotcmdNext.IsOn = Settings.BotCmdNext;
-            TglBotcmdSkip.IsOn = Settings.BotCmdSkip;
-            TglBotcmdSkipvote.IsOn = Settings.BotCmdSkipVote;
-            TglBotcmdSsr.IsOn = Settings.TwSrCommand;
-            TglBotcmdRemove.IsOn = Settings.BotCmdRemove;
-            TglBotcmdSonglike.IsOn = Settings.BotCmdSonglike;
-            TglBotcmdPlayPause.IsOn = Settings.BotCmdPlayPause;
             TglDonationReminder.IsOn = Settings.DonationReminder;
-            NudSkipVoteCount.Value = Settings.BotCmdSkipVoteCount;
-            TglBotcmdVol.IsOn = Settings.BotCmdVol;
-            TglBotcmdVolIgnoreMod.IsOn = Settings.BotCmdVolIgnoreMod;
-            TglBotQueue.IsOn = Settings.BotCmdQueue;
-            TextBoxTriggerSong.Text = string.IsNullOrWhiteSpace(Settings.BotCmdSongTrigger)
-                ? "song"
-                : Settings.BotCmdSongTrigger;
-            TextBoxTriggerPos.Text =
-                string.IsNullOrWhiteSpace(Settings.BotCmdPosTrigger) ? "pos" : Settings.BotCmdPosTrigger;
-            TextBoxTriggerNext.Text = string.IsNullOrWhiteSpace(Settings.BotCmdNextTrigger)
-                ? "next"
-                : Settings.BotCmdNextTrigger;
-            TextBoxTriggerSkip.Text = string.IsNullOrWhiteSpace(Settings.BotCmdSkipTrigger)
-                ? "skip"
-                : Settings.BotCmdSkipTrigger;
-            TextBoxTriggerVoteskip.Text = string.IsNullOrWhiteSpace(Settings.BotCmdVoteskipTrigger)
-                ? "voteskip"
-                : Settings.BotCmdVoteskipTrigger;
-            TextBoxTriggerSsr.Text =
-                string.IsNullOrWhiteSpace(Settings.BotCmdSsrTrigger) ? "ssr" : Settings.BotCmdSsrTrigger;
-            TextBoxTriggerRemove.Text = string.IsNullOrWhiteSpace(Settings.BotCmdRemoveTrigger)
-                ? "remove"
-                : Settings.BotCmdRemoveTrigger;
-            TextBoxTriggerSonglike.Text = string.IsNullOrWhiteSpace(Settings.BotCmdSonglikeTrigger)
-                ? "songlike"
-                : Settings.BotCmdSonglikeTrigger;
-            TextBoxTriggerQueue.Text = string.IsNullOrWhiteSpace(Settings.BotCmdQueueTrigger)
-                ? "queue"
-                : Settings.BotCmdQueueTrigger;
 
-            Settings.UserLevelsCommand ??= new List<int>();
-            Settings.UserLevelsReward ??= new List<int>();
+            Settings.UserLevelsCommand ??= [];
+            Settings.UserLevelsReward ??= [];
+
+            Settings.UnlimitedSrUserlevelsCommand ??= [];
+            Settings.UnlimitedSrUserlevelsReward ??= [];
+
 
             ChckUlCommandViewer.IsChecked = Settings.UserLevelsCommand.Contains(0);
             ChckUlCommandFollower.IsChecked = Settings.UserLevelsCommand.Contains(1);
@@ -217,9 +194,24 @@ namespace Songify_Slim.Views
             ChckUlRewardVip.IsChecked = Settings.UserLevelsReward.Contains(5);
             ChckUlRewardMod.IsChecked = Settings.UserLevelsReward.Contains(6);
 
+            ChckUnlimitedCommandViewer.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(0);
+            ChckUnlimitedCommandFollower.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(1);
+            ChckUnlimitedCommandSub.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(2);
+            ChckUnlimitedCommandSubT2.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(3);
+            ChckUnlimitedCommandSubT3.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(4);
+            ChckUnlimitedCommandVip.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(5);
+            ChckUnlimitedCommandMod.IsChecked = Settings.UnlimitedSrUserlevelsCommand.Contains(6);
+
+            ChckUnlimitedRewardViewer.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(0);
+            ChckUnlimitedRewardFollower.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(1);
+            ChckUnlimitedRewardSub.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(2);
+            ChckUnlimitedRewardSubT2.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(3);
+            ChckUnlimitedRewardSubT3.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(4);
+            ChckUnlimitedRewardVip.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(5);
+            ChckUnlimitedRewardMod.IsChecked = Settings.UnlimitedSrUserlevelsReward.Contains(6);
+
             TglLimitSrPlaylist.IsOn = Settings.LimitSrToPlaylist;
             CbSpotifySongLimitPlaylist.IsEnabled = Settings.LimitSrToPlaylist;
-
 
             if (SpotifyApiHandler.Spotify != null)
             {
@@ -229,7 +221,7 @@ namespace Songify_Slim.Views
                 {
                     if (profile.Images is { Count: > 0 } && !string.IsNullOrEmpty(profile.Images[0].Url))
                     {
-                        BitmapImage bitmap = new BitmapImage();
+                        BitmapImage bitmap = new();
                         bitmap.BeginInit();
                         bitmap.UriSource = new Uri(profile.Images[0].Url, UriKind.Absolute);
                         bitmap.EndInit();
@@ -247,11 +239,8 @@ namespace Songify_Slim.Views
                     Logger.LogExc(ex);
                 }
 
-
                 await LoadSpotifyPlaylists();
             }
-
-
 
             ThemeHandler.ApplyTheme();
             CbxLanguage.SelectionChanged -= ComboBox_SelectionChanged;
@@ -268,7 +257,7 @@ namespace Songify_Slim.Views
                 //TxtbxTwChannel.Text = Settings.TwitchUser.Login;
                 CbAccountSelection.Items.Add(new ComboBoxItem
                 {
-                    Content = new UC_AccountItem(Settings.TwitchUser.Login, Settings.TwitchAccessToken)
+                    Content = new UcAccountItem(Settings.TwitchUser.Login, Settings.TwitchAccessToken)
                 });
             }
 
@@ -278,7 +267,7 @@ namespace Songify_Slim.Views
                     BtnLogInTwitchAltBot);
                 CbAccountSelection.Items.Add(new ComboBoxItem
                 {
-                    Content = new UC_AccountItem(Settings.TwitchBotUser.Login, Settings.TwitchBotToken)
+                    Content = new UcAccountItem(Settings.TwitchBotUser.Login, Settings.TwitchBotToken)
                 });
             }
 
@@ -286,10 +275,11 @@ namespace Songify_Slim.Views
                 CbAccountSelection.SelectedIndex = 0;
             else
                 CbAccountSelection.SelectedItem = CbAccountSelection.Items.Cast<ComboBoxItem>().FirstOrDefault(item =>
-                    ((UC_AccountItem)item.Content).Username != null &&
-                    ((UC_AccountItem)item.Content).Username == Settings.TwAcc);
+                    ((UcAccountItem)item.Content).Username != null &&
+                    ((UcAccountItem)item.Content).Username == Settings.TwAcc);
             CbAccountSelection.SelectionChanged += CbAccountSelection_SelectionChanged;
             await LoadRewards();
+
 
             if (Settings.RefundConditons == null) return;
             foreach (int condition in Settings.RefundConditons)
@@ -327,6 +317,7 @@ namespace Songify_Slim.Views
                     lbl.Content += $"{user.DisplayName} (Token Expired)";
 
                     break;
+
                 default:
                     btnAlt.Visibility = Visibility.Collapsed;
                     btn.Visibility = Visibility.Collapsed;
@@ -349,6 +340,7 @@ namespace Songify_Slim.Views
                         img.ImageSource =
                             new FormatConvertedBitmap(bitmap, PixelFormats.Gray8, BitmapPalettes.Gray256, 0);
                         break;
+
                     default:
                         img.ImageSource = bitmap;
                         break;
@@ -370,6 +362,7 @@ namespace Songify_Slim.Views
             };
 
             // Get the current caret position and the length of the selected text
+            if (tb == null) return;
             int selectionStart = tb.SelectionStart;
             int selectionLength = tb.SelectionLength;
 
@@ -384,15 +377,17 @@ namespace Songify_Slim.Views
 
             // Place the caret after the inserted text
             tb.SelectionStart = selectionStart + text.Length;
+
+
             tb.SelectionLength = 0;
 
             //// Appends Rightclick-Text from the output text box (parameters)
             //tb?.AppendText(text);
             //tb?.Select(TxtbxOutputformat.Text.Length, 0);
-            if (tb?.ContextMenu != null) tb.ContextMenu.IsOpen = false;
+            if (tb.ContextMenu != null) tb.ContextMenu.IsOpen = false;
         }
 
-        private void btn_Botresponse_Click(object sender, RoutedEventArgs e)
+        private void Btn_Botresponse_Click(object sender, RoutedEventArgs e)
         {
             WindowBotresponse wBr = new();
             wBr.Show();
@@ -422,7 +417,7 @@ namespace Songify_Slim.Views
         private async void Btn_ImportConfig_Click(object sender, RoutedEventArgs e)
         {
             // Open a dialog to select a folder to import the config files
-            using FolderBrowserDialog fbd = new FolderBrowserDialog();
+            using FolderBrowserDialog fbd = new();
             fbd.Description = @"Select the folder containing the config files";
             fbd.ShowNewFolderButton = false; // Optional, prevents creating new folders
             // set the apps directory as the default directory
@@ -434,7 +429,7 @@ namespace Songify_Slim.Views
             await SetControls();
         }
 
-        private void btn_OwnAppHelp_Click(object sender, RoutedEventArgs e)
+        private void Btn_OwnAppHelp_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("https://github.com/songify-rocks/Songify/wiki/Setting-up-song-requests#spotify-setup");
         }
@@ -455,7 +450,7 @@ namespace Songify_Slim.Views
             Application.Current.Shutdown();
         }
 
-        private async void btn_spotifyLink_Click(object sender, RoutedEventArgs e)
+        private async void Btn_spotifyLink_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(Settings.ClientId) || string.IsNullOrEmpty(Settings.ClientSecret))
             {
@@ -591,77 +586,65 @@ namespace Songify_Slim.Views
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (CbxLanguage.SelectedValue is string selectedLanguageCode)
-            {
-                // Update the current UI culture and settings
-                Thread.CurrentThread.CurrentUICulture = new CultureInfo(selectedLanguageCode);
-                Settings.Language = selectedLanguageCode;
-
-                // Restart the application to apply the language change
-                Process.Start(Application.ResourceAssembly.Location);
-                Application.Current.Shutdown();
-            }
-
-
-
-            //switch (CbxLanguage.SelectedIndex)
-            //{
-            //    case 0:
-            //        // English
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
-            //        Settings.Language = "en";
-            //        break;
-            //    case 1:
-            //        // German
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("de-DE");
-            //        Settings.Language = "de-DE";
-            //        break;
-            //    case 2:
-            //        // Russian
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("ru-RU");
-            //        Settings.Language = "ru-RU";
-            //        break;
-            //    case 3:
-            //        // Spansih
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("es");
-            //        Settings.Language = "es";
-            //        break;
-            //    case 4:
-            //        // Spansih
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("fr");
-            //        Settings.Language = "fr";
-            //        break;
-            //    case 5:
-            //        // Polish
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pl-PL");
-            //        Settings.Language = "pl-PL";
-            //        break;
-            //    case 6:
-            //        // Portuguese
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-PT");
-            //        Settings.Language = "pt-PT";
-            //        break;
-            //    case 7:
-            //        // Italian
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("it-IT");
-            //        Settings.Language = "it-IT";
-            //        break;
-            //    case 8:
-            //        // Brazilian Portuguese
-            //        Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-BR");
-            //        Settings.Language = "pt-BR";
-            //        break;
-            //}
-
+            //if (CbxLanguage.SelectedValue is not string selectedLanguageCode) return;
+            //// Update the current UI culture and settings
+            //Settings.Language = selectedLanguageCode;
+            //// Restart the application to apply the language change
             //Process.Start(Application.ResourceAssembly.Location);
             //Application.Current.Shutdown();
+
+
+            if (CbxLanguage.SelectedValue is not string selectedLanguageCode)
+                return;
+
+            CultureInfo newCulture = new(selectedLanguageCode);
+            Thread.CurrentThread.CurrentUICulture = newCulture;
+
+            // Create a new ResourceDictionary from the RESX for the selected culture.
+            ResourceDictionary newLocalizationDict = ResxToDictionaryHelper.CreateResourceDictionary(newCulture);
+
+            // Find the existing localization dictionary by checking for a known key.
+            Collection<ResourceDictionary> dictionaries = Application.Current.Resources.MergedDictionaries;
+            ResourceDictionary localizationDict = dictionaries.FirstOrDefault(dict => dict.Contains("sw_tcSystem_lblLanguage"));
+
+            if (localizationDict != null)
+            {
+                int index = dictionaries.IndexOf(localizationDict);
+                dictionaries.Remove(localizationDict);
+                dictionaries.Insert(index, newLocalizationDict);
+            }
+            else
+            {
+                // If no localization dictionary was found, simply add the new one.
+                dictionaries.Add(newLocalizationDict);
+            }
+
+            _supportedLanguages = new Dictionary<string, string>
+            {
+                { "en", Application.Current.TryFindResource("lang_en") as string ?? "English"},
+                { "de-DE", Application.Current.TryFindResource("lang_deDE") as string ??"German" },
+                { "ru-RU", Application.Current.TryFindResource("lang_ru") as string ??"Russian" },
+                { "es", Application.Current.TryFindResource("lang_es") as string ??"Spanish" },
+                { "fr", Application.Current.TryFindResource("lang_fr") as string ??"French" },
+                { "pl-PL", Application.Current.TryFindResource("lang_pl") as string ??"Polish" },
+                { "pt-PT", Application.Current.TryFindResource("lang_pt") as string ?? "Portuguese" },
+                { "it-IT", Application.Current.TryFindResource("lang_it") as string ??"Italian" },
+                { "pt-BR", Application.Current.TryFindResource("lang_br") as string ??"Brazilian Portuguese" },
+                { "be-BY", Application.Current.TryFindResource("lang_beBY") as string ??"Belarusian" }
+            };
+            CbxLanguage.ItemsSource = _supportedLanguages;
+            CbxLanguage.SelectedValue = selectedLanguageCode;
+
+            // Optionally update your settings.
+            Settings.Language = selectedLanguageCode;
+
+            _wRp?.LoadItems();
         }
 
         private void ComboBoxColorSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // sets the color, when selecting yellow it changes foreground color because else its hard to read
             Settings.Color = (string)(ComboBoxColor.SelectedItem as ComboBoxItem)?.Content;
-            ThemeHandler.ApplyTheme();
             if (Settings.Color != "Yellow")
             {
                 ((MainWindow)_mW).LblStatus.Foreground = Brushes.White;
@@ -672,6 +655,7 @@ namespace Songify_Slim.Views
                 ((MainWindow)_mW).LblStatus.Foreground = Brushes.Black;
                 ((MainWindow)_mW).LblCopyright.Foreground = Brushes.Black;
             }
+            ThemeHandler.ApplyTheme();
         }
 
         private void MenuBtnArtist_Click(object sender, RoutedEventArgs e)
@@ -710,21 +694,6 @@ namespace Songify_Slim.Views
 
         private async void MetroWindow_Closing(object sender, CancelEventArgs e)
         {
-            //ConfigHandler.WriteXml(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) + "/config.xml", true);
-            Settings.BotCmdSongTrigger =
-                string.IsNullOrWhiteSpace(TextBoxTriggerSong.Text) ? "song" : TextBoxTriggerSong.Text;
-            Settings.BotCmdPosTrigger =
-                string.IsNullOrWhiteSpace(TextBoxTriggerPos.Text) ? "pos" : TextBoxTriggerPos.Text;
-            Settings.BotCmdNextTrigger =
-                string.IsNullOrWhiteSpace(TextBoxTriggerNext.Text) ? "next" : TextBoxTriggerNext.Text;
-            Settings.BotCmdSkipTrigger =
-                string.IsNullOrWhiteSpace(TextBoxTriggerSkip.Text) ? "skip" : TextBoxTriggerSkip.Text;
-            Settings.BotCmdVoteskipTrigger = string.IsNullOrWhiteSpace(TextBoxTriggerVoteskip.Text)
-                ? "voteskip"
-                : TextBoxTriggerVoteskip.Text;
-            Settings.BotCmdSsrTrigger =
-                string.IsNullOrWhiteSpace(TextBoxTriggerSsr.Text) ? "ssr" : TextBoxTriggerSsr.Text;
-
             ConfigHandler.WriteAllConfig(Settings.Export());
             if (_appIdInitialValue == Settings.UseOwnApp) return;
             e.Cancel = true;
@@ -741,7 +710,7 @@ namespace Songify_Slim.Views
             Application.Current.Shutdown();
         }
 
-        private void nud_Spaces_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
+        private void Nud_Spaces_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
         {
             if (NudSpaces.Value != null) Settings.SpaceCount = (int)NudSpaces.Value;
         }
@@ -781,30 +750,38 @@ namespace Songify_Slim.Views
             //Sets max requests per user value
             switch ((Enums.TwitchUserLevels)CbxUserLevelsMaxReq.SelectedIndex)
             {
-                case Enums.TwitchUserLevels.Everyone:
+                case Enums.TwitchUserLevels.Viewer:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqEveryone = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.Follower:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqFollower = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.Vip:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqVip = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.Subscriber:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqSubscriber = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.SubscriberT2:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqSubscriberT2 = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.SubscriberT3:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqSubscriberT3 = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.Moderator:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqModerator = (int)NudMaxReq.Value;
                     break;
+
                 case Enums.TwitchUserLevels.Broadcaster:
                     if (NudMaxReq.Value != null) Settings.TwSrMaxReqBroadcaster = (int)NudMaxReq.Value;
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -850,17 +827,17 @@ namespace Songify_Slim.Views
             await SetControls();
         }
 
-        private void tb_ClientID_TextChanged(object sender, TextChangedEventArgs e)
+        private void Tb_ClientID_TextChanged(object sender, TextChangedEventArgs e)
         {
             Settings.ClientId = TbClientId.Text;
         }
 
-        private void tb_ClientSecret_PasswordChanged(object sender, RoutedEventArgs e)
+        private void Tb_ClientSecret_PasswordChanged(object sender, RoutedEventArgs e)
         {
             Settings.ClientSecret = TbClientSecret.Password;
         }
 
-        private void tgl_AnnounceInChat_Toggled(object sender, RoutedEventArgs e)
+        private void Tgl_AnnounceInChat_Toggled(object sender, RoutedEventArgs e)
         {
             Settings.AnnounceInChat = TglAnnounceInChat.IsOn;
         }
@@ -886,22 +863,22 @@ namespace Songify_Slim.Views
             Settings.Theme = ThemeToggleSwitch.IsOn ? "Dark" : "Light";
 
             ThemeHandler.ApplyTheme();
-
         }
 
-        private void txtbx_twChannel_TextChanged(object sender, TextChangedEventArgs e)
+        private void Txtbx_twChannel_TextChanged(object sender, TextChangedEventArgs e)
         {
+            ((TextBox)sender).Text = ((TextBox)sender).Text.ToLower().Trim();
             // Sets the twitch channel
             Settings.TwChannel = TxtbxTwChannel.Text.Trim();
         }
 
-        private void txtbx_twOAuth_PasswordChanged(object sender, RoutedEventArgs e)
+        private void Txtbx_twOAuth_PasswordChanged(object sender, RoutedEventArgs e)
         {
             // Sets the twitch oauth token
             Settings.TwOAuth = TxtbxTwOAuth.Password;
         }
 
-        private void txtbx_twUser_TextChanged(object sender, TextChangedEventArgs e)
+        private void Txtbx_twUser_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Sets the twitch acc
             Settings.TwAcc = TxtbxTwUser.Text.Trim();
@@ -946,7 +923,7 @@ namespace Songify_Slim.Views
             NudMaxReq.ValueChanged -= NudMaxReq_ValueChanged;
             NudMaxReq.Value = (Enums.TwitchUserLevels)CbxUserLevelsMaxReq.SelectedIndex switch
             {
-                Enums.TwitchUserLevels.Everyone => Settings.TwSrMaxReqEveryone,
+                Enums.TwitchUserLevels.Viewer => Settings.TwSrMaxReqEveryone,
                 Enums.TwitchUserLevels.Follower => Settings.TwSrMaxReqFollower,
                 Enums.TwitchUserLevels.Vip => Settings.TwSrMaxReqVip,
                 Enums.TwitchUserLevels.Subscriber => Settings.TwSrMaxReqSubscriber,
@@ -970,7 +947,6 @@ namespace Songify_Slim.Views
             Settings.TwSrMaxReqSubscriberT3 = (int)NudMaxReq.Value;
             Settings.TwSrMaxReqModerator = (int)NudMaxReq.Value;
             Settings.TwSrMaxReqBroadcaster = (int)NudMaxReq.Value;
-
         }
 
         private void BtnFocusRewards_Click(object sender, RoutedEventArgs e)
@@ -1014,8 +990,7 @@ namespace Songify_Slim.Views
                         {
                             bool managable = managableRewards.Find(r => r.Id == reward.Id) != null;
 
-                            ListboxRewards.Items.Add(new UC_TwitchReward(reward));
-
+                            ListboxRewards.Items.Add(new UcTwitchReward(reward));
                         }
                     }
                     BtnCreateNewReward.IsEnabled = true;
@@ -1024,7 +999,6 @@ namespace Songify_Slim.Views
                 {
                     Logger.LogExc(e);
                 }
-
         }
 
         private void BtnLogInTwitch_Click(object sender, RoutedEventArgs e)
@@ -1037,14 +1011,15 @@ namespace Songify_Slim.Views
             if (((ToggleSwitch)sender).IsOn)
             {
                 PnlTwich.Visibility = Visibility.Collapsed;
+                PnlTwichBot.Visibility = Visibility.Collapsed;
                 PnlSpotify.Visibility = Visibility.Collapsed;
             }
             else
             {
                 PnlTwich.Visibility = Visibility.Visible;
+                PnlTwichBot.Visibility = Visibility.Visible;
                 PnlSpotify.Visibility = Visibility.Visible;
             }
-
         }
 
         private void BtnWebserverStart_Click(object sender, RoutedEventArgs e)
@@ -1128,6 +1103,7 @@ namespace Songify_Slim.Views
                     Settings.TwitchAccessToken = "";
                     Settings.TwitchUser = null;
                     break;
+
                 case "bot":
                     Settings.TwitchBotToken = "";
                     Settings.TwitchBotUser = null;
@@ -1148,7 +1124,7 @@ namespace Songify_Slim.Views
             NudServerPort.Value = 66535;
         }
 
-        private void tgl_InformChat_Toggled(object sender, RoutedEventArgs e)
+        private void Tgl_InformChat_Toggled(object sender, RoutedEventArgs e)
         {
             Settings.ChatLiveStatus = TglInformChat.IsOn;
         }
@@ -1156,7 +1132,6 @@ namespace Songify_Slim.Views
         private void BtnLogInTwitchBot_OnClick(object sender, RoutedEventArgs e)
         {
             TwitchHandler.ApiConnect(Enums.TwitchAccount.Bot);
-
         }
 
         private void ComboboxRedirectPort_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1169,120 +1144,13 @@ namespace Songify_Slim.Views
             Settings.TwitchFetchPort = (int)ComboboxfetchPort.SelectedItem;
         }
 
-        private void tgl_botcmd_pos_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdPos = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void tgl_botcmd_song_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdSong = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void tgl_botcmd_next_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdNext = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void tgl_botcmd_skip_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdSkip = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void tgl_botcmd_skipvote_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdSkipVote = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void NudSkipVoteCount_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
-        {
-            double? value = ((NumericUpDown)sender).Value;
-            if (value != null)
-                Settings.BotCmdSkipVoteCount = (int)value;
-        }
-
-        private void TextBoxTrigger_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (!IsLoaded) return;
-            switch ((sender as TextBox)?.Tag.ToString())
-            {
-                case "song":
-                    Settings.BotCmdSongTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "song"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "pos":
-                    Settings.BotCmdPosTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "pos"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "next":
-                    Settings.BotCmdNextTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "next"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "skip":
-                    Settings.BotCmdSkipTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "skip"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "voteskip":
-                    Settings.BotCmdVoteskipTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "voteskip"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "ssr":
-                    Settings.BotCmdSsrTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "ssr"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "remove":
-                    Settings.BotCmdRemoveTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "remove"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "like":
-                    Settings.BotCmdSonglikeTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "like"
-                        : ((TextBox)sender).Text;
-                    break;
-                case "queue":
-                    Settings.BotCmdQueueTrigger = string.IsNullOrWhiteSpace(((TextBox)sender).Text)
-                        ? "queue"
-                        : ((TextBox)sender).Text;
-                    break;
-            }
-        }
-
-        private void TextBoxTrigger_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Space)
-                e.Handled = true;
-            base.OnPreviewKeyDown(e);
-        }
-
-        private void Tgl_botcmd_ssr_OnToggled_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.TwSrCommand = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void cb_SpotifyPlaylist_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Cb_SpotifyPlaylist_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!IsLoaded)
                 return;
             if ((((ComboBox)sender).SelectedItem as ComboBoxItem)?.Content is not UcPlaylistItem item)
                 return;
             Settings.SpotifyPlaylistId = item.Playlist.Id;
-        }
-
-        private void Tgl_botcmd_remove_OnToggled_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdRemove = ((ToggleSwitch)sender).IsOn;
-        }
-
-        private void Tgl_botcmd_songlike_OnToggled_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdSonglike = ((ToggleSwitch)sender).IsOn;
         }
 
         private void CbAccountSelection_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1294,18 +1162,13 @@ namespace Songify_Slim.Views
 
         public void ResetTwitchConnection()
         {
-            Settings.TwAcc = ((UC_AccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).Username;
-            Settings.TwOAuth = ((UC_AccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).OAuth;
+            Settings.TwAcc = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).Username;
+            Settings.TwOAuth = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).OAuth;
             TwitchHandler.Client?.DisconnectAsync();
             TwitchHandler.Client = null;
             TwitchHandler.BotConnect();
             TwitchHandler.MainConnect();
             _ = SetControls();
-        }
-
-        private void Tgl_botcmd_PlayPause_OnToggled_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdPlayPause = ((ToggleSwitch)sender).IsOn;
         }
 
         private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1316,46 +1179,38 @@ namespace Songify_Slim.Views
 
         private void CbxUserLevelsRewardChecked(object sender, RoutedEventArgs e)
         {
-            /*
-               Everyone = 0,
-               Subscriber = 1,
-               Vip = 2,
-               Moderator = 3,
-               Broadcaster = 4
-             */
-
-            if (!(sender is CheckBox checkBox)) return;
+            if (sender is not CheckBox checkBox) return;
             int value = Convert.ToInt32(checkBox.Tag);
             if (Settings.UserLevelsReward.Contains(value)) return;
-            List<int> list = new(Settings.UserLevelsReward) { value };
+            List<int> list = [.. Settings.UserLevelsReward, value];
             Settings.UserLevelsReward = list;
         }
 
         private void CbxUserLevelsRewardUnchecked(object sender, RoutedEventArgs e)
         {
-            if (!(sender is CheckBox checkBox)) return;
+            if (sender is not CheckBox checkBox) return;
             int value = Convert.ToInt32(checkBox.Tag);
             if (!Settings.UserLevelsReward.Contains(value)) return;
-            List<int> list = new(Settings.UserLevelsReward);
+            List<int> list = [.. Settings.UserLevelsReward];
             list.Remove(value);
             Settings.UserLevelsReward = list;
         }
 
         private void CbxUserLevelsCommandChecked(object sender, RoutedEventArgs e)
         {
-            if (!(sender is CheckBox checkBox)) return;
+            if (sender is not CheckBox checkBox) return;
             int value = Convert.ToInt32(checkBox.Tag);
             if (Settings.UserLevelsCommand.Contains(value)) return;
-            List<int> list = new(Settings.UserLevelsCommand) { value };
+            List<int> list = [.. Settings.UserLevelsCommand, value];
             Settings.UserLevelsCommand = list;
         }
 
         private void CbxUserLevelsCommandUnchecked(object sender, RoutedEventArgs e)
         {
-            if (!(sender is CheckBox checkBox)) return;
+            if (sender is not CheckBox checkBox) return;
             int value = Convert.ToInt32(checkBox.Tag);
             if (!Settings.UserLevelsCommand.Contains(value)) return;
-            List<int> list = new(Settings.UserLevelsCommand);
+            List<int> list = [.. Settings.UserLevelsCommand];
             list.Remove(value);
             Settings.UserLevelsCommand = list;
         }
@@ -1417,10 +1272,10 @@ namespace Songify_Slim.Views
                         });
 
                         Paging<SimplePlaylist> playlists =
-                            await SpotifyApiHandler.Spotify.GetCurrentUsersPlaylistsAsync(20, 0);
+                            await SpotifyApiHandler.Spotify.GetCurrentUsersPlaylistsAsync();
                         if (playlists == null) return;
                         List<SimplePlaylist> playlistCache = [];
-                        CbSpotifyPlaylist.SelectionChanged -= cb_SpotifyPlaylist_SelectionChanged;
+                        CbSpotifyPlaylist.SelectionChanged -= Cb_SpotifyPlaylist_SelectionChanged;
                         while (playlists != null)
                         {
                             foreach (SimplePlaylist playlist in playlists.Items
@@ -1441,7 +1296,7 @@ namespace Songify_Slim.Views
                                 playlists.Offset + playlists.Limit);
                         }
 
-                        CbSpotifyPlaylist.SelectionChanged += cb_SpotifyPlaylist_SelectionChanged;
+                        CbSpotifyPlaylist.SelectionChanged += Cb_SpotifyPlaylist_SelectionChanged;
                         Settings.SpotifyPlaylistCache = playlistCache;
 
                         if (!string.IsNullOrEmpty(Settings.SpotifyPlaylistId))
@@ -1550,11 +1405,6 @@ namespace Songify_Slim.Views
             Settings.UseDefaultBrowser = ((ToggleSwitch)sender).IsOn;
         }
 
-        private void Tgl_botcmd_Vol_OnToggled_Toggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdVol = ((ToggleSwitch)sender).IsOn;
-        }
-
         private async void TglDonationReminder_OnToggled(object sender, RoutedEventArgs e)
         {
             if (!IsLoaded)
@@ -1578,8 +1428,10 @@ namespace Songify_Slim.Views
                 case MessageDialogResult.Negative:
                     Process.Start("https://ko-fi.com/overcodetv");
                     return;
+
                 case MessageDialogResult.Affirmative:
                     break;
+
                 case MessageDialogResult.Canceled:
                 case MessageDialogResult.FirstAuxiliary:
                 case MessageDialogResult.SecondAuxiliary:
@@ -1590,21 +1442,14 @@ namespace Songify_Slim.Views
 
         private void BtnLogInTwitchAlt_Click(object sender, RoutedEventArgs e)
         {
-            Window_ManualTwitchLogin manualTwitchLogin = new(
-                (sender is Button
-                    ? ((Button)sender).Tag.ToString().Equals("main", StringComparison.CurrentCultureIgnoreCase)
-                    : true)
+            WindowManualTwitchLogin manualTwitchLogin = new(
+                (sender is not Button button || button.Tag.ToString().Equals("main", StringComparison.CurrentCultureIgnoreCase))
                     ? Enums.TwitchAccount.Main
                     : Enums.TwitchAccount.Bot)
             {
                 Owner = this
             };
             manualTwitchLogin.ShowDialog();
-        }
-
-        private void TglBotcmdVolIgnoreMod_OnToggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdVolIgnoreMod = ((ToggleSwitch)sender).IsOn;
         }
 
         private void CbPauseOptions_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1618,12 +1463,9 @@ namespace Songify_Slim.Views
 
         private void ChbxSpacesSplitFiles_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.AppendSpacesSplitFiles = (bool)((CheckBox)sender).IsChecked;
-        }
-
-        private void TglBotQueue_OnToggled(object sender, RoutedEventArgs e)
-        {
-            Settings.BotCmdQueue = ((ToggleSwitch)sender).IsOn;
+            bool? isChecked = ((CheckBox)sender).IsChecked;
+            if (isChecked != null)
+                Settings.AppendSpacesSplitFiles = (bool)isChecked;
         }
 
         private void CooldownSpinner_OnValueChangedpinner_ValueChanged(object sender,
@@ -1655,10 +1497,10 @@ namespace Songify_Slim.Views
             Settings.DownloadCanvas = ((ToggleSwitch)sender).IsOn;
         }
 
-        private async void btn_YTMDesktopLink_Click(object sender, RoutedEventArgs e)
+        private async void Btn_YTMDesktopLink_Click(object sender, RoutedEventArgs e)
         {
             const string baseUrl = "http://localhost:9863/api/v1/";
-            YTMDAuthentication auth = new(baseUrl);
+            YtmdAuthentication auth = new(baseUrl);
 
             try
             {
@@ -1667,26 +1509,22 @@ namespace Songify_Slim.Views
                 string appName = "Songify";
                 string appVersion = FormatAppVersion(GlobalObjects.AppVersion);
 
-                Debug.WriteLine("Requesting authorization code...");
                 string authCode = await auth.RequestAuthCodeAsync(appId, appName, appVersion);
-                Debug.WriteLine($"Received authorization code: {authCode}");
 
                 TbYTMDesktopAuthcode.Text = $"AUTH CODE: {authCode}";
                 PnlYTMDesktopAuthcode.Visibility = Visibility.Visible;
                 Activate();
 
                 // Step 2: Request the token using the auth code
-                Debug.WriteLine("Requesting token...");
                 string token = await auth.RequestTokenAsync(appId, authCode);
-                Debug.WriteLine($"Received token: {token}");
                 if (string.IsNullOrEmpty(token)) return;
                 TbYTMDesktopToken.Password = token;
-                Settings.YTMDToken = token;
+                Settings.YtmdToken = token;
                 await ((MainWindow)Application.Current.MainWindow)?.StartYtmdSocketIoClient()!;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error: {ex.Message}");
+                Logger.LogExc(ex);
             }
         }
 
@@ -1707,37 +1545,92 @@ namespace Songify_Slim.Views
             Settings.FulfillRedemption = TglFulfillRedemption.IsOn;
 		}
 
-        private void MyListBox_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        private void BtnResponseParams_OnClick(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.ListBox listBox)
+            _wRp ??= new Window_ResponseParams
             {
-                // Make sure the control is actually in the visual tree
-                if (VisualTreeHelper.GetChildrenCount(listBox) > 0)
+                Left = Left + Width,
+                Top = Top,
+                Owner = this,
+                Height = Height
+            };
+            if (!_wRp.IsLoaded)
+                _wRp = new Window_ResponseParams
                 {
-                    // The ListBox's template contains a Border -> ScrollViewer -> ...
-                    var border = VisualTreeHelper.GetChild(listBox, 0) as Border;
-                    if (border != null && VisualTreeHelper.GetChildrenCount(border) > 0)
-                    {
-                        // Get the ScrollViewer inside the Border
-                        var scrollViewer = VisualTreeHelper.GetChild(border, 0) as ScrollViewer;
-                        if (scrollViewer != null)
-                        {
-                            // Now you can call LineUp/LineDown on the ScrollViewer
-                            if (e.Delta > 0)
-                            {
-                                scrollViewer.LineUp();
-                            }
-                            else
-                            {
-                                scrollViewer.LineDown();
-                            }
+                    Left = Left + Width,
+                    Top = Top,
+                    Owner = this,
+                    Height = Height
+                };
+            if (_wRp.IsVisible)
+                _wRp.Hide();
+            else
+                _wRp.Show();
+        }
 
-                            // Mark the event as handled so the default scrolling doesn’t also occur
-                            e.Handled = true;
-                        }
-                    }
-                }
-            }
+        public void MetroWindow_LocationChanged(object sender, EventArgs e)
+        {
+            if (_wRp is not { } responseParams) return;
+            responseParams.LocationChanged -= responseParams.Window_ResponseParams_OnLocationChanged;
+            responseParams.Left = Left + Width;
+            responseParams.Top = Top;
+            responseParams.LocationChanged += responseParams.Window_ResponseParams_OnLocationChanged;
+
+        }
+
+        private void MetroWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (_wRp == null) return;
+            _wRp.Height = Height;
+            _wRp.LocationChanged -= _wRp.Window_ResponseParams_OnLocationChanged;
+            _wRp.Left = Left + Width;
+            _wRp.Top = Top;
+            _wRp.LocationChanged += _wRp.Window_ResponseParams_OnLocationChanged;
+
+        }
+
+        private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+            e.Handled = true;
+        }
+
+        private void CbxUnlimitedRewardChecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox checkBox) return;
+            int value = Convert.ToInt32(checkBox.Tag);
+            if (Settings.UnlimitedSrUserlevelsReward.Contains(value)) return;
+            List<int> list = [.. Settings.UnlimitedSrUserlevelsReward, value];
+            Settings.UnlimitedSrUserlevelsReward = list;
+        }
+
+        private void CbxUnlimitedRewardUnchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox checkBox) return;
+            int value = Convert.ToInt32(checkBox.Tag);
+            if (!Settings.UnlimitedSrUserlevelsReward.Contains(value)) return;
+            List<int> list = [.. Settings.UnlimitedSrUserlevelsReward];
+            list.Remove(value);
+            Settings.UnlimitedSrUserlevelsReward = list;
+        }
+
+        private void CbxUnlimitedCommandUnchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox checkBox) return;
+            int value = Convert.ToInt32(checkBox.Tag);
+            if (!Settings.UnlimitedSrUserlevelsCommand.Contains(value)) return;
+            List<int> list = [.. Settings.UnlimitedSrUserlevelsCommand];
+            list.Remove(value);
+            Settings.UnlimitedSrUserlevelsCommand = list;
+        }
+
+        private void CbxUnlimitedCommandChecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox checkBox) return;
+            int value = Convert.ToInt32(checkBox.Tag);
+            if (Settings.UnlimitedSrUserlevelsCommand.Contains(value)) return;
+            List<int> list = [.. Settings.UnlimitedSrUserlevelsCommand, value];
+            Settings.UnlimitedSrUserlevelsCommand = list;
         }
     }
 }

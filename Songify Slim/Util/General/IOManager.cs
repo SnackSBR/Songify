@@ -12,7 +12,7 @@ using Songify_Slim.Views;
 
 namespace Songify_Slim.Util.General
 {
-    static class IOManager
+    internal static class IoManager
     {
         private static bool _isWriting = false;
 
@@ -43,7 +43,7 @@ namespace Songify_Slim.Util.General
                 .Replace(@"\r", "\r");
 
             // Split the replaced input into lines
-            string[] lines = replacedInput.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            string[] lines = replacedInput.Split([Environment.NewLine], StringSplitOptions.None);
 
             // Trim the leading spaces from each line
             for (int i = 0; i < lines.Length; i++)
@@ -91,7 +91,6 @@ namespace Songify_Slim.Util.General
                         Console.WriteLine(e);
                     }
                 }
-
                 else
                 {
                     WebClient webClient = new();
@@ -142,7 +141,6 @@ namespace Songify_Slim.Util.General
                         catch (Exception ex)
                         {
                             Debug.WriteLine(ex);
-
                         }
                         _isWriting = false;
                     };
@@ -194,7 +192,6 @@ namespace Songify_Slim.Util.General
                     g.Flush();
                     bmp.Save(coverPath, ImageFormat.Png);
                 }
-
                 else
                 {
                     WebClient webClient = new();
@@ -261,14 +258,13 @@ namespace Songify_Slim.Util.General
                 Logger.LogExc(ex);
             }
         }
+
         private static bool IsFileLocked(FileInfo file)
         {
             try
             {
-                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                {
-                    stream.Close();
-                }
+                using FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+                stream.Close();
             }
             catch (IOException)
             {

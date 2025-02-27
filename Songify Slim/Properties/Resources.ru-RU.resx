@@ -410,7 +410,7 @@
     <value>Консоль</value>
   </data>
   <data name="brw_cmd_skip" xml:space="preserve">
-    <value>Пропускает текущую песню (Стример / Модератор / Заказчик)</value>
+    <value>Пропускает текущую песню</value>
   </data>
   <data name="brw_cmd_skipvote" xml:space="preserve">
     <value>Начинает голосование за пропуск текущей песни</value>
@@ -429,9 +429,6 @@
   </data>
   <data name="Sw_System_OpenQueueOnStartup" xml:space="preserve">
     <value>Открыть окно очереди при запуске</value>
-  </data>
-  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
-    <value>Автоматически объявлять песню в чате</value>
   </data>
   <data name="Sw_Integration_OnlyWorkWhenLive" xml:space="preserve">
     <value>Ограничить активность Twitch, чтобы реагировать только во время трансляции (требуется вход в Twitch)</value>
@@ -631,9 +628,6 @@
   <data name="brw_cmd_songlike" xml:space="preserve">
     <value>Добавляет текущую песню в плейлист, выбранный в конфигурации Spotify.</value>
   </data>
-  <data name="brw_cmd_playpause" xml:space="preserve">
-    <value>Возобновляет или приостанавливает текущее воспроизведение.</value>
-  </data>
   <data name="sw_SpotifySR_Userlevel_command" xml:space="preserve">
     <value>Разрешенные уровни пользователей для команды SR</value>
   </data>
@@ -821,9 +815,99 @@
     <value>Трек добавлен в очередь.</value>
   </data>
   <data name="s_FillClientIdAndSecret" xml:space="preserve">
-    <value>Введите идентификатор клиента Spotify и секретный код.</value>
+    <value>Введите идентификатор клиента Spotify и секретный код</value>
   </data>
   <data name="s_OK" xml:space="preserve">
     <value>OK</value>
+  </data>
+  <data name="brw_UserLevelTooLowReward" xml:space="preserve">
+    <value>Уровень пользователя слишком низок для получения вознаграждения за запрос песни</value>
+  </data>
+  <data name="brw_UserLevelTooLowCommand" xml:space="preserve">
+    <value>Уровень пользователя слишком низок для команды !ssr</value>
+  </data>
+  <data name="sw_tcCommands_ShowUserLevelBadges" xml:space="preserve">
+    <value>Показать значки уровня пользователя</value>
+  </data>
+  <data name="s_Columns" xml:space="preserve">
+    <value>Колонны</value>
+  </data>
+  <data name="brw_cmd_play" xml:space="preserve">
+    <value>Возобновляет текущее воспроизведение.</value>
+  </data>
+  <data name="brw_cmd_queue" xml:space="preserve">
+    <value>Возвращает первые 5 песен текущей очереди воспроизведения</value>
+  </data>
+  <data name="brw_cmd_pause" xml:space="preserve">
+    <value>Приостанавливает текущее воспроизведение.</value>
+  </data>
+  <data name="brw_cmd_commands" xml:space="preserve">
+    <value>Возвращает все активные команды Songify.</value>
+  </data>
+  <data name="Param_User_Desc" xml:space="preserve">
+    <value>Пользователь, который активировал команду или канал вознаграждения</value>
+  </data>
+  <data name="Param_Requester_Desc" xml:space="preserve">
+    <value>Запросчик текущей песни</value>
+  </data>
+  <data name="Param_ConditionalText_Desc" xml:space="preserve">
+    <value>Текст внутри '{{' и '}}' будет опубликован только в том случае, если текущая песня является запрошенной песней.</value>
+  </data>
+  <data name="Param_Artist_Desc" xml:space="preserve">
+    <value>Исполнители текущей песни или запроса песни</value>
+  </data>
+  <data name="Param_SingleArtist_Desc" xml:space="preserve">
+    <value>Основной исполнитель текущей песни или запроса песни</value>
+  </data>
+  <data name="Param_ErrorMessage_Desc" xml:space="preserve">
+    <value>Сообщение об ошибке, если произошла ошибка</value>
+  </data>
+  <data name="Param_MaxLength_Desc" xml:space="preserve">
+    <value>Максимальная продолжительность песни в минутах</value>
+  </data>
+  <data name="Param_MaxRequests_Desc" xml:space="preserve">
+    <value>Макс. количество запросов для пользователя</value>
+  </data>
+  <data name="Param_SongFormat_Desc" xml:space="preserve">
+    <value>{Artist} - {Title}</value>
+  </data>
+  <data name="Param_PlaylistName_Desc" xml:space="preserve">
+    <value>Название плейлиста</value>
+  </data>
+  <data name="Param_PlaylistUrl_Desc" xml:space="preserve">
+    <value>URL-адрес плейлиста</value>
+  </data>
+  <data name="Param_SongList_Desc" xml:space="preserve">
+    <value>Только для команды !pos создает список песен, которые пользователь имеет в очереди, с указанием его позиции.</value>
+  </data>
+  <data name="Param_Votes_Desc" xml:space="preserve">
+    <value>Количество голосов за пропуск голосования/всего голосов</value>
+  </data>
+  <data name="Param_Cooldown_Desc" xml:space="preserve">
+    <value>Время восстановления в секундах (для глобального и пользовательского CD)</value>
+  </data>
+  <data name="Param_Url_Desc" xml:space="preserve">
+    <value>URL-адрес песни Spotify</value>
+  </data>
+  <data name="Param_Queue_Desc" xml:space="preserve">
+    <value>Следующие 5 песен в очереди</value>
+  </data>
+  <data name="Param_Commands_Desc" xml:space="preserve">
+    <value>Список всех активных команд</value>
+  </data>
+  <data name="s_Copied" xml:space="preserve">
+    <value>Скопировано</value>
+  </data>
+  <data name="sw_ResponseVariables" xml:space="preserve">
+    <value>Переменные ответа</value>
+  </data>
+  <data name="lang_beBY" xml:space="preserve">
+    <value>Белорусский</value>
+  </data>
+  <data name="Param_Userlevel_Desc" xml:space="preserve">
+    <value>Уровень пользователя (Последователь, Подписчик и т. д.)</value>
+  </data>
+  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
+    <value>Автоматически объявлять песню в чате (использует ответ !song)</value>
   </data>
 </root>

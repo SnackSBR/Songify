@@ -283,7 +283,7 @@
     <value>Format wyjściowy (plik tekstowy i widget)</value>
   </data>
   <data name="sw_tcOutput_PauseText" xml:space="preserve">
-    <value>Wstrzymaj tekst</value>
+    <value>Brak odtwarzania muzyki</value>
   </data>
   <data name="sw_tcOutput_PauseWatermark" xml:space="preserve">
     <value>Niestandardowy tekst pauzy (pusty dla pustego pliku tekstowego)</value>
@@ -313,10 +313,10 @@
     <value>Szybkość pobierania Chrome (sekundy)</value>
   </data>
   <data name="sw_tcSystem_Minimize" xml:space="preserve">
-    <value>minimalizuj do zasobnika systemowego</value>
+    <value>Minimalizuj do zasobnika systemowego</value>
   </data>
   <data name="sw_tcSystem_SendAnonData" xml:space="preserve">
-    <value>przesyłaj anonimowe dane</value>
+    <value>Przesyłaj anonimowe dane</value>
   </data>
   <data name="sw_tcSystem_Telemetry" xml:space="preserve">
     <value>Telemetria</value>
@@ -403,7 +403,7 @@
     <value>Opis zmian</value>
   </data>
   <data name="mw_menu_Help_LogFolder" xml:space="preserve">
-    <value>Folder dziennika</value>
+    <value>Folder dziennika zdarzeń</value>
   </data>
   <data name="mw_menu_Twitch_TwitchLogin" xml:space="preserve">
     <value>Zaloguj się za pomocą Twitcha</value>
@@ -412,7 +412,7 @@
     <value>Konsola</value>
   </data>
   <data name="brw_cmd_skip" xml:space="preserve">
-    <value>Pomija bieżący utwór (nadawca / mod / requester)</value>
+    <value>Pomija bieżący utwór</value>
   </data>
   <data name="brw_cmd_skipvote" xml:space="preserve">
     <value>Rozpoczyna głosowanie za pominięciem bieżącego utworu</value>
@@ -433,10 +433,7 @@
     <value>Ukryj nazwy kont i zdjęcia profilowe</value>
   </data>
   <data name="Sw_System_OpenQueueOnStartup" xml:space="preserve">
-    <value>otwórz okno kolejki podczas uruchamiania</value>
-  </data>
-  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
-    <value>Automatycznie ogłaszaj utwór na czacie</value>
+    <value>Otwórz okno kolejki podczas uruchamiania</value>
   </data>
   <data name="Sw_Integration_OnlyWorkWhenLive" xml:space="preserve">
     <value>Ogranicz aktywność Twitcha, aby działała tylko wtedy, gdy transmisja jest na żywo (wymagane jest logowanie na Twitchu)</value>
@@ -493,7 +490,7 @@
     <value>Zalogowałem się za pomocą Twitcha</value>
   </data>
   <data name="Sw_SpotifySR_UnlimitedSRs" xml:space="preserve">
-    <value>nieograniczone prośby o utwory</value>
+    <value>Nielimitowane prośby o utwory</value>
   </data>
   <data name="mw_menu_SongRequests" xml:space="preserve">
     <value>Prośby o piosenkę</value>
@@ -633,9 +630,6 @@
   <data name="brw_cmd_songlike" xml:space="preserve">
     <value>Dodaje bieżący utwór do listy odtwarzania wybranej w konfiguracji Spotify.</value>
   </data>
-  <data name="brw_cmd_playpause" xml:space="preserve">
-    <value>Wznawia lub wstrzymuje bieżące odtwarzanie.</value>
-  </data>
   <data name="sw_SpotifySR_Userlevel_command" xml:space="preserve">
     <value>Dozwolone poziomy użytkowników dla polecenia SR</value>
   </data>
@@ -715,7 +709,7 @@
     <value>Nie rób nic</value>
   </data>
   <data name="sw_tcOutput_onPause_UseCustomPauseText" xml:space="preserve">
-    <value>Użyj niestandardowego tekstu pauzy</value>
+    <value>Użyj niestandardowego tekstu wstrzymanej piosenki</value>
   </data>
   <data name="sw_tcOutput_onPause_ClearAllOutput" xml:space="preserve">
     <value>Wyczyść wszystkie dane wyjściowe</value>
@@ -793,13 +787,13 @@
     <value>Poziomy użytkownika (polecenie)</value>
   </data>
   <data name="s_Viewer" xml:space="preserve">
-    <value>Dozorca</value>
+    <value>Widz</value>
   </data>
   <data name="s_Follower" xml:space="preserve">
-    <value>Zwolennik</value>
+    <value>Obserwujący</value>
   </data>
   <data name="s_Subscriber" xml:space="preserve">
-    <value>Abonent</value>
+    <value>Subskrybent</value>
   </data>
   <data name="s_VIP" xml:space="preserve">
     <value>VIP</value>
@@ -824,5 +818,95 @@
   </data>
   <data name="s_OK" xml:space="preserve">
     <value>OK</value>
+  </data>
+  <data name="brw_UserLevelTooLowCommand" xml:space="preserve">
+    <value>Poziom użytkownika jest zbyt niski dla polecenia !ssr</value>
+  </data>
+  <data name="brw_UserLevelTooLowReward" xml:space="preserve">
+    <value>Poziom użytkownika jest zbyt niski, aby otrzymać nagrodę za prośbę o piosenkę</value>
+  </data>
+  <data name="sw_tcCommands_ShowUserLevelBadges" xml:space="preserve">
+    <value>Pokaż odznaki poziomu użytkownika</value>
+  </data>
+  <data name="s_Columns" xml:space="preserve">
+    <value>Kolumny</value>
+  </data>
+  <data name="brw_cmd_play" xml:space="preserve">
+    <value>Wznawia bieżące odtwarzanie.</value>
+  </data>
+  <data name="brw_cmd_queue" xml:space="preserve">
+    <value>Zwraca pierwsze 5 utworów z bieżącej kolejki odtwarzania</value>
+  </data>
+  <data name="brw_cmd_pause" xml:space="preserve">
+    <value>Wstrzymuje bieżące odtwarzanie.</value>
+  </data>
+  <data name="brw_cmd_commands" xml:space="preserve">
+    <value>Zwraca wszystkie aktywne polecenia Songify.</value>
+  </data>
+  <data name="Param_User_Desc" xml:space="preserve">
+    <value>Użytkownik, który uruchomił polecenie lub nagrodę kanałową</value>
+  </data>
+  <data name="Param_Requester_Desc" xml:space="preserve">
+    <value>Osoba prosząca o aktualną piosenkę</value>
+  </data>
+  <data name="Param_ConditionalText_Desc" xml:space="preserve">
+    <value>Tekst wewnątrz '{{' i '}}' zostanie opublikowany tylko wtedy, gdy bieżąca piosenka jest prośbą o piosenkę</value>
+  </data>
+  <data name="Param_Artist_Desc" xml:space="preserve">
+    <value>Artyści dla aktualnej piosenki lub prośby o piosenkę</value>
+  </data>
+  <data name="Param_SingleArtist_Desc" xml:space="preserve">
+    <value>Główny artysta dla aktualnej piosenki lub prośby o piosenkę</value>
+  </data>
+  <data name="Param_ErrorMessage_Desc" xml:space="preserve">
+    <value>Komunikat o błędzie w przypadku wystąpienia błędu</value>
+  </data>
+  <data name="Param_MaxLength_Desc" xml:space="preserve">
+    <value>Maksymalna długość utworu w minutach</value>
+  </data>
+  <data name="Param_MaxRequests_Desc" xml:space="preserve">
+    <value>Maksymalna liczba żądań na użytkownika</value>
+  </data>
+  <data name="Param_SongFormat_Desc" xml:space="preserve">
+    <value>{Artist} - {Title}</value>
+  </data>
+  <data name="Param_PlaylistName_Desc" xml:space="preserve">
+    <value>Nazwa listy odtwarzania</value>
+  </data>
+  <data name="Param_PlaylistUrl_Desc" xml:space="preserve">
+    <value>Adres URL listy odtwarzania</value>
+  </data>
+  <data name="Param_SongList_Desc" xml:space="preserve">
+    <value>Tylko dla polecenia !pos tworzy listę utworów, które użytkownik ma w kolejce, wraz z ich pozycją</value>
+  </data>
+  <data name="Param_Votes_Desc" xml:space="preserve">
+    <value>Liczba głosów na pominięcie głosów/łącznie</value>
+  </data>
+  <data name="Param_Cooldown_Desc" xml:space="preserve">
+    <value>Czas odnowienia w sekundach (dla globalnego cd i cd użytkownika)</value>
+  </data>
+  <data name="Param_Url_Desc" xml:space="preserve">
+    <value>Adres URL utworu Spotify</value>
+  </data>
+  <data name="Param_Queue_Desc" xml:space="preserve">
+    <value>Następne 5 piosenek w kolejce</value>
+  </data>
+  <data name="Param_Commands_Desc" xml:space="preserve">
+    <value>Lista wszystkich aktywnych poleceń</value>
+  </data>
+  <data name="s_Copied" xml:space="preserve">
+    <value>Skopiowano</value>
+  </data>
+  <data name="sw_ResponseVariables" xml:space="preserve">
+    <value>Zmienne odpowiedzi</value>
+  </data>
+  <data name="lang_beBY" xml:space="preserve">
+    <value>Białoruski</value>
+  </data>
+  <data name="Param_Userlevel_Desc" xml:space="preserve">
+    <value>Poziom użytkownika (obserwujący, subskrybent itp.)</value>
+  </data>
+  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
+    <value>Automatyczne ogłaszanie piosenki na czacie (używa odpowiedzi !song)</value>
   </data>
 </root>

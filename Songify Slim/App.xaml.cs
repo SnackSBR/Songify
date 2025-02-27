@@ -2,12 +2,15 @@
 using Songify_Slim.Util.Settings;
 using Songify_Slim.Views;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -22,6 +25,7 @@ namespace Songify_Slim
     {
         private static Mutex _mutex;
         public static bool IsBeta = true;
+        private const string PipeName = "SongifyPipe";
 
         private void Application_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
@@ -65,12 +69,14 @@ namespace Songify_Slim
                     _mutex = Mutex.OpenExisting(appName);
                     if (_mutex != null)
                     {
-                        Window mainWindow = Current.MainWindow;
-                        if (mainWindow != null)
-                        {
-                            mainWindow.Show();
-                            mainWindow.Activate();
-                        }
+                        SingleInstanceHelper.NotifyFirstInstance();
+                        Environment.Exit(0);
+                        //Window mainWindow = Current.MainWindow;
+                        //if (mainWindow != null)
+                        //{
+                        //    mainWindow.Show();
+                        //    mainWindow.Activate();
+                        //}
                     }
                     Current.Shutdown();
                     return;
@@ -81,9 +87,41 @@ namespace Songify_Slim
             AppDomain currentDomain = AppDomain.CurrentDomain;
             currentDomain.UnhandledException += MyHandler;
 
+
             base.OnStartup(e);
 
+            // Determine the default culture. You can use CultureInfo.CurrentUICulture or a fixed one like "en".
+            CultureInfo defaultCulture = CultureInfo.CurrentUICulture;
+            // Or for a fixed default, for example:
+            // CultureInfo defaultCulture = new CultureInfo("en");
+
+            // Create a localization dictionary from your RESX file.
+            ResourceDictionary defaultLocalizationDict = ResxToDictionaryHelper.CreateResourceDictionary(defaultCulture);
+
+            // Add it to the merged dictionaries so that your UI has access to the keys from the start.
+            Application.Current.Resources.MergedDictionaries.Add(defaultLocalizationDict);
+
+            StartPipeServer();
         }
+
+
+        public static class ResxToDictionaryHelper
+        {
+            public static ResourceDictionary CreateResourceDictionary(CultureInfo culture)
+            {
+                ResourceDictionary dict = new ResourceDictionary();
+                ResourceManager rm = Songify_Slim.Properties.Resources.ResourceManager;
+                // Retrieve the resource set for the specified culture.
+                ResourceSet resourceSet = rm.GetResourceSet(culture, true, true);
+                foreach (DictionaryEntry entry in resourceSet)
+                {
+                    // Add each key/value pair to the dictionary.
+                    dict.Add(entry.Key, entry.Value);
+                }
+                return dict;
+            }
+        }
+
 
         private static void MyHandler(object sender, UnhandledExceptionEventArgs args)
         {
@@ -112,9 +150,9 @@ namespace Songify_Slim
             if (MessageBox.Show("Restart Songify?", "Songify", MessageBoxButton.YesNo, MessageBoxImage.Question) !=
                 MessageBoxResult.Yes) return;
             // Pass an argument to indicate this is a restart
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new()
             {
-                FileName = System.Reflection.Assembly.GetExecutingAssembly().Location,
+                FileName = Assembly.GetExecutingAssembly().Location,
                 Arguments = "--restart", // Custom argument
                 UseShellExecute = false
             };
@@ -123,7 +161,7 @@ namespace Songify_Slim
             Process.Start(startInfo);
 
             // Shutdown the current instance
-            Application.Current.Shutdown();
+            Current.Shutdown();
         }
 
         private void Application_Startup(object sender, StartupEventArgs e)
@@ -147,6 +185,54 @@ namespace Songify_Slim
             };
 
             main.Show();
+        }
+
+        private void StartPipeServer()
+        {
+            Thread pipeThread = new(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        using NamedPipeServerStream server = new(PipeName, PipeDirection.In);
+                        // Wait for a connection (blocking)
+                        server.WaitForConnection();
+
+                        using StreamReader reader = new(server);
+                        string message = reader.ReadLine();
+                        if (message == "SHOW")
+                        {
+                            // Use the dispatcher to interact with UI elements.
+                            Current.Dispatcher.Invoke(RestoreWindow);
+                        }
+                    }
+                    catch
+                    {
+                        // Handle exceptions if needed (for example, log them)
+                    }
+                }
+            })
+            {
+                IsBackground = true
+            };
+
+            pipeThread.Start();
+        }
+
+        private static void RestoreWindow()
+        {
+            // Your logic to restore the window from the tray.
+            Window win = Current.MainWindow;
+
+            if (win is MainWindow)
+            {
+                // For example:
+                win.Show();
+                win.WindowState = WindowState.Normal;
+                Thread.Sleep(1000);
+                win.Activate();
+            }
         }
     }
 }

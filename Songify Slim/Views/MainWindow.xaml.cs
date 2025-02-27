@@ -45,8 +45,10 @@ using ImageConverter = Songify_Slim.Util.General.ImageConverter;
 using Rectangle = System.Windows.Shapes.Rectangle;
 using System.Net.NetworkInformation;
 using MahApps.Metro.Controls;
+using Songify_Slim.Models.YTMD;
 using Songify_Slim.Util.Songify.YTMDesktop;
 using Songify_Slim.Properties;
+using Songify_Slim.Util.Spotify;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
@@ -56,6 +58,7 @@ namespace Songify_Slim.Views
     {
         #region Variables
 
+        public SocketIoClient IoClient;
         private bool _forceClose;
         private CancellationTokenSource _sCts;
         private DispatcherTimer _disclaimerTimer = new();
@@ -69,7 +72,8 @@ namespace Songify_Slim.Views
         public NotifyIcon NotifyIcon = new();
         public SongFetcher Sf = new();
         public string SongArtist, SongTitle;
-        public List<PSA> PSAs;
+        public List<Psa> PsAs;
+
         #endregion Variables
 
         private static async void TelemetryTask(object sender, ElapsedEventArgs e)
@@ -140,7 +144,7 @@ namespace Songify_Slim.Views
                 PlayerType.FooBar2000,
                 PlayerType.Vlc,
                 PlayerType.Youtube,
-                PlayerType.YTMDesktop
+                PlayerType.YtmDesktop
             ];
             cbx_Source.ItemsSource = sourceBoxItems;
         }
@@ -203,7 +207,6 @@ namespace Songify_Slim.Views
             }
             else
             {
-
                 // Opens the 'Settings'-Window
                 Window_Settings sW = new() { Top = Top, Left = Left };
                 sW.Show();
@@ -263,10 +266,16 @@ namespace Songify_Slim.Views
             if (_selectedSource == PlayerType.SpotifyWeb)
                 img_cover.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
-                    if ((_selectedSource == PlayerType.SpotifyWeb || _selectedSource == PlayerType.YTMDesktop) && Settings.DownloadCover)
+                    if (_selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop && Settings.DownloadCover)
+                    {
                         img_cover.Visibility = Visibility.Visible;
+                        GrdCover.Visibility = Visibility.Visible;
+                    }
                     else
+                    {
                         img_cover.Visibility = Visibility.Collapsed;
+                        GrdCover.Visibility = Visibility.Collapsed;
+                    }
                 }));
         }
 
@@ -315,7 +324,8 @@ namespace Songify_Slim.Views
                 case PlayerType.SpotifyWeb:
                     await Sf.FetchSpotifyWeb();
                     break;
-                case PlayerType.YTMDesktop:
+
+                case PlayerType.YtmDesktop:
                     //await Sf.FetchYTM();
                     break;
             }
@@ -387,7 +397,6 @@ namespace Songify_Slim.Views
                 Settings.UseOwnApp = true;
             }
 
-
             bool internetAvailable = await WaitForInternetConnectionAsync();
 
             while (!internetAvailable)
@@ -399,18 +408,23 @@ namespace Songify_Slim.Views
                 switch (msgResult)
                 {
                     case MessageDialogResult.Canceled:
-                        this.Close();
+                        Close();
                         break;
+
                     case MessageDialogResult.Negative:
-                        this.Close();
+                        Close();
                         break;
+
                     case MessageDialogResult.Affirmative:
                         internetAvailable = await WaitForInternetConnectionAsync();
                         break;
+
                     case MessageDialogResult.FirstAuxiliary:
                         break;
+
                     case MessageDialogResult.SecondAuxiliary:
                         break;
+
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -420,23 +434,22 @@ namespace Songify_Slim.Views
             await HandleTwitchInitializationAsync();
             await FinalSetupAndUpdatesAsync();
             await StartYtmdSocketIoClient();
-
         }
 
         public async Task StartYtmdSocketIoClient()
         {
             // Replace with your server URL and token
             const string serverUrl = "http://127.0.0.1:9863/api/v1/realtime";
-            string token = Settings.YTMDToken;
+            string token = Settings.YtmdToken;
 
             // Initialize the Socket.IO client
-            SocketIoClient socketClient = new SocketIoClient(serverUrl, token);
+            IoClient = new SocketIoClient(serverUrl, token);
 
             // Run connection in a separate task
             try
             {
-                await socketClient.ConnectAsync();
-                Debug.WriteLine("YTMD: Socket.IO connected.");
+                await IoClient.ConnectAsync();
+                GlobalObjects.IoClientConnected = true;
             }
             catch (Exception ex)
             {
@@ -448,7 +461,7 @@ namespace Songify_Slim.Views
         {
             int tries = 0;
             int maxRetries = 12;
-            using HttpClient httpClient = new HttpClient
+            using HttpClient httpClient = new()
             {
                 Timeout = TimeSpan.FromSeconds(5) // Set a timeout for the request
             };
@@ -498,16 +511,16 @@ namespace Songify_Slim.Views
             _motdTimer.Interval = TimeSpan.FromMinutes(5);
             _motdTimer.Tick += (o, args) =>
             {
-                SetPSAs();
+                SetPsAs();
             };
             _motdTimer.Start();
-            SetPSAs();
+            SetPsAs();
         }
 
-        private async void SetPSAs()
+        private async void SetPsAs()
         {
-            PSAs = await WebHelper.GetPsa();
-            if (PSAs == null || PSAs.Count == 0)
+            PsAs = await WebHelper.GetPsa();
+            if (PsAs == null || PsAs.Count == 0)
             {
                 PnlMotds.Children.Clear();
                 Badge.Badge = null!;
@@ -519,10 +532,10 @@ namespace Songify_Slim.Views
 
             badgeIcon.Kind = PackIconBootstrapIconsKind.BellFill;
 
-            if (PSAs.Any(motd => motd.Severity == "High"))
+            if (PsAs.Any(motd => motd.Severity == "High"))
             {
                 Badge.BadgeBackground = new SolidColorBrush(Colors.IndianRed);
-                PSA highSeverityPsa = PSAs.First(motd => motd.Severity == "High");
+                Psa highSeverityPsa = PsAs.First(motd => motd.Severity == "High");
                 string msg = highSeverityPsa.MessageText;
                 if (msg.Length > 190)
                     msg = msg.Substring(0, 190) + "...";
@@ -530,18 +543,25 @@ namespace Songify_Slim.Views
                 {
                     if (Settings.LastShownMotdId != highSeverityPsa.Id)
                     {
-                        new ToastContentBuilder()
-                            .AddArgument("msgId", highSeverityPsa.Id)
-                            .AddText($"{highSeverityPsa.Author} from Songify")
-                            .AddText(msg)
-                            .AddAttributionText(highSeverityPsa.CreatedAtDateTime.ToString())
-                            .Show(); // Not seeing the Show() method? Make sure you have versionversion 7.0, and if you're using .NET 6 (or later), then your TFM must be net6.0-windows10.0.17763.0 or greater
-                        // store the already shown psa id and don't show it again
-                        Settings.LastShownMotdId = highSeverityPsa.Id;
+                        try
+                        {
+                            new ToastContentBuilder()
+                                .AddArgument("msgId", highSeverityPsa.Id)
+                                .AddText($"{highSeverityPsa.Author} from Songify")
+                                .AddText(msg)
+                                .AddAttributionText(highSeverityPsa.CreatedAtDateTime.ToString())
+                                .Show();
+                        }
+                        catch (Exception e)
+                        {
+                            Settings.LastShownMotdId = highSeverityPsa.Id;
+                            throw;
+                        }
+
                     }
                 }
             }
-            else if (PSAs.Any(motd => motd.Severity == "Medium"))
+            else if (PsAs.Any(motd => motd.Severity == "Medium"))
             {
                 Badge.BadgeBackground = new SolidColorBrush(Colors.Orange);
             }
@@ -549,13 +569,13 @@ namespace Songify_Slim.Views
                 Badge.BadgeBackground = new SolidColorBrush(Colors.DarkGray);
 
             PnlMotds.Children.Clear();
-            for (int i = 0; i < PSAs.Count; i++)
+            for (int i = 0; i < PsAs.Count; i++)
             {
                 // Add the PsaControl
-                PnlMotds.Children.Add(new PsaControl(PSAs[i]));
+                PnlMotds.Children.Add(new PsaControl(PsAs[i]));
 
                 // Add a spacer if it's not the last item
-                if (i < PSAs.Count - 1)
+                if (i < PsAs.Count - 1)
                 {
                     PnlMotds.Children.Add(new Rectangle
                     {
@@ -565,7 +585,6 @@ namespace Songify_Slim.Views
                     });
                 }
             }
-
         }
 
         public void SetUnreadBadge()
@@ -575,7 +594,7 @@ namespace Songify_Slim.Views
                 // compare motds ids with Settings.ReadNotificationIds and if there are new motds, show the badge
                 if (Settings.ReadNotificationIds != null)
                 {
-                    List<PSA> unreadMotds = PSAs.Where(m => !Settings.ReadNotificationIds.Contains(m.Id)).ToList();
+                    List<Psa> unreadMotds = PsAs.Where(m => !Settings.ReadNotificationIds.Contains(m.Id)).ToList();
                     if (unreadMotds.Count > 0)
                     {
                         Badge.Badge = unreadMotds.Count;
@@ -585,9 +604,9 @@ namespace Songify_Slim.Views
                         Badge.Badge = null!;
                     }
                 }
-                else if (Badge.Badge.ToString() != PSAs.Count.ToString())
+                else if (Badge.Badge.ToString() != PsAs.Count.ToString())
                 {
-                    Badge.Badge = PSAs.Count;
+                    Badge.Badge = PsAs.Count;
                 }
             }
             catch (Exception e)
@@ -630,22 +649,16 @@ namespace Songify_Slim.Views
                 try
                 {
                     // Ensure PSAs is not null or empty
-                    if (PSAs == null || !PSAs.Any())
+                    if (PsAs == null || !PsAs.Any())
                     {
                         throw new InvalidOperationException("PSAs collection is null or empty.");
                     }
 
                     // Attempt to find the PSA
-                    PSA psa = PSAs.FirstOrDefault(o => o.Id == intValue);
-
-                    // Check if psa is found
-                    if (psa == null)
-                    {
-                        throw new InvalidOperationException($"No PSA found with Id {intValue}.");
-                    }
+                    Psa psa = PsAs.FirstOrDefault(o => o.Id == intValue) ?? throw new InvalidOperationException($"No PSA found with Id {intValue}.");
 
                     // Create and show the dialog
-                    WindowUniversalDialog wUd = new WindowUniversalDialog(psa, "Notification");
+                    WindowUniversalDialog wUd = new(psa, "Notification");
                     wUd.Show();
                 }
                 catch (Exception ex)
@@ -683,6 +696,7 @@ namespace Songify_Slim.Views
 
             return argsDictionary;
         }
+
         private void SetupUiAndThemes()
         {
             SetIconColors();
@@ -700,7 +714,7 @@ namespace Songify_Slim.Views
 
             // text in the bottom right
             //LblCopyright.Content = App.IsBeta ? $"Songify v{GlobalObjects.AppVersion} BETA Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
-            LblCopyright.Content = App.IsBeta ? $"Songify v1.6.8 BETA_1 Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
+            LblCopyright.Content = App.IsBeta ? $"Songify v1.6.8 BETA Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
             BetaPanel.Visibility = App.IsBeta ? Visibility.Visible : Visibility.Collapsed;
 
             tbFontSize.Text = Settings.Fontsize.ToString();
@@ -723,7 +737,7 @@ namespace Songify_Slim.Views
                 Logger.LogExc(e);
             }
 
-            img_cover.Visibility = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YTMDesktop ? Visibility.Visible : Visibility.Collapsed;
+            img_cover.Visibility = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public void PlayVideoFromUrl(string url)
@@ -731,7 +745,7 @@ namespace Songify_Slim.Views
             img_cover.Visibility = Visibility.Collapsed;
             CoverCanvas.Visibility = Visibility.Visible;
             string newUri = url.Replace("\"", "");
-            Uri uri = new Uri(newUri);
+            Uri uri = new(newUri);
             CoverCanvas.Stop();
             CoverCanvas.Source = null;
             CoverCanvas.Source = uri;
@@ -820,6 +834,7 @@ namespace Songify_Slim.Views
                     case true:
                         Logger.LogStr("Stream is LIVE");
                         break;
+
                     case false:
                         Logger.LogStr("Stream is NOT live");
                         break;
@@ -840,10 +855,7 @@ namespace Songify_Slim.Views
             }
 
             CheckForUpdates();
-
         }
-
-
 
         private void DisclaimerTimerOnTick(object sender, EventArgs e)
         {
@@ -1005,18 +1017,16 @@ namespace Songify_Slim.Views
             MessageDialogResult msgResult = await this.ShowMessageAsync(Properties.Resources.s_Warning,
                 Properties.Resources.mw_clearQueueDisclaimer, MessageDialogStyle.AffirmativeAndNegative,
                 new MetroDialogSettings { AffirmativeButtonText = Properties.Resources.msgbx_Yes, NegativeButtonText = Properties.Resources.msgbx_No });
-            if (msgResult == MessageDialogResult.Affirmative)
+            if (msgResult != MessageDialogResult.Affirmative) return;
+            //GlobalObjects.ReqList.Clear();
+            //WebHelper.UpdateWebQueue("", "", "", "", "", "1", "c");
+            GlobalObjects.ReqList.Clear();
+            dynamic payload = new
             {
-                //GlobalObjects.ReqList.Clear();
-                //WebHelper.UpdateWebQueue("", "", "", "", "", "1", "c");
-                GlobalObjects.ReqList.Clear();
-                dynamic payload = new
-                {
-                    uuid = Settings.Uuid,
-                    key = Settings.AccessKey
-                };
-                await WebHelper.QueueRequest(WebHelper.RequestMethod.Clear, Json.Serialize(payload));
-            }
+                uuid = Settings.Uuid,
+                key = Settings.AccessKey
+            };
+            await WebHelper.QueueRequest(WebHelper.RequestMethod.Clear, Json.Serialize(payload));
         }
 
         private void Mi_TW_BotResponses_Click(object sender, RoutedEventArgs e)
@@ -1040,8 +1050,20 @@ namespace Songify_Slim.Views
 
             await img_cover.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
             {
+                Visibility vis = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop && Settings.DownloadCover
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
 
-                img_cover.Visibility = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YTMDesktop && Settings.DownloadCover ? Visibility.Visible : Visibility.Collapsed;
+                double maxWidth = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop && Settings.DownloadCover
+                    ? 500
+                    : (int)Width - 6;
+
+                if (img_cover.Visibility != vis)
+                    img_cover.Visibility = vis;
+                if (GrdCover.Visibility != vis)
+                    GrdCover.Visibility = vis;
+                if (Math.Abs((int)TxtblockLiveoutput.MaxWidth - maxWidth) > 0)
+                    TxtblockLiveoutput.MaxWidth = maxWidth;
             }));
 
             try
@@ -1099,10 +1121,11 @@ namespace Songify_Slim.Views
 
             switch (_selectedSource)
             {
-                case PlayerType.YTMDesktop:
+                case PlayerType.YtmDesktop:
                     // stop the timer if the player is YTMDesktop
                     _timerFetcher.Enabled = false;
                     break;
+
                 case PlayerType.SpotifyLegacy:
                 case PlayerType.Vlc:
                 case PlayerType.FooBar2000:
@@ -1148,10 +1171,12 @@ namespace Songify_Slim.Views
                     // if Settings.Player (int) != playerType.SpotifyWeb, hide the cover image
                     if (Settings.Player != 0 && Settings.DownloadCover)
                     {
+                        GrdCover.Visibility = Visibility.Collapsed;
                         CoverCanvas.Visibility = Visibility.Collapsed;
                     }
                     else
                     {
+                        GrdCover.Visibility = Visibility.Visible;
                         CoverCanvas.Visibility = Visibility.Visible;
                     }
                     img_cover.Visibility = Visibility.Collapsed;
@@ -1196,13 +1221,15 @@ namespace Songify_Slim.Views
                     if ((Settings.Player == 0 || Settings.Player == 6) && Settings.DownloadCover)
                     {
                         img_cover.Visibility = Visibility.Visible;
+                        GrdCover.Visibility = Visibility.Visible;
                     }
                     else
                     {
                         img_cover.Visibility = Visibility.Collapsed;
+                        GrdCover.Visibility = Visibility.Collapsed;
                     }
-
                     CoverCanvas.Visibility = Visibility.Collapsed;
+
                     Logger.LogStr("COVER: Set succesfully");
                     break;
                 }
@@ -1259,7 +1286,7 @@ namespace Songify_Slim.Views
                 Process.Start($"http://localhost:{Settings.WebServerPort}");
         }
 
-        private void btnFontSizeUp_Click(object sender, RoutedEventArgs e)
+        private void BtnFontSizeUp_Click(object sender, RoutedEventArgs e)
         {
             int fontSize = MathUtils.Clamp(Settings.Fontsize + 2, 2, 72);
             Settings.Fontsize = fontSize;
@@ -1267,7 +1294,7 @@ namespace Songify_Slim.Views
             tbFontSize.Text = fontSize.ToString();
         }
 
-        private void btnFontSizeDown_Click(object sender, RoutedEventArgs e)
+        private void BtnFontSizeDown_Click(object sender, RoutedEventArgs e)
         {
             int fontSize = MathUtils.Clamp(Settings.Fontsize - 2, 2, 72);
             Settings.Fontsize = fontSize;
@@ -1290,7 +1317,7 @@ namespace Songify_Slim.Views
 
         private void BtnMotd_Click(object sender, RoutedEventArgs e)
         {
-            SetPSAs();
+            SetPsAs();
             // If any child of pnlMotds as MotdcControl is unread, show the all read button
             List<int> readIds = Settings.ReadNotificationIds ?? [];
             Button btnFlyOutAllread = GlobalObjects.FindChild<Button>(FlyMotd, "BtnFlyOutAllread");
@@ -1310,7 +1337,6 @@ namespace Songify_Slim.Views
             }
 
             FlyMotd.IsOpen = !FlyMotd.IsOpen;
-
         }
 
         private void MainWindow_OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -1326,7 +1352,7 @@ namespace Songify_Slim.Views
         private void BtnFlyOutAllread_OnClick(object sender, RoutedEventArgs e)
         {
             List<int> readIds = Settings.ReadNotificationIds ?? [];
-            foreach (PSA motd in PSAs.Where(motd => !readIds.Contains(motd.Id)))
+            foreach (Psa motd in PsAs.Where(motd => !readIds.Contains(motd.Id)))
             {
                 readIds.Add(motd.Id);
             }
@@ -1374,8 +1400,8 @@ namespace Songify_Slim.Views
         private void BtnMenuViewUserList_Click(object sender, RoutedEventArgs e)
         {
             //Check if a window of type Window_Userlist is open. Focus it if it is, if not open a new one
-            if (IsWindowOpen<Window_Userlist>()) return;
-            Window_Userlist wU = new() { Top = Top, Left = Left };
+            if (IsWindowOpen<WindowUserlist>()) return;
+            WindowUserlist wU = new() { Top = Top, Left = Left };
             wU.Show();
         }
 

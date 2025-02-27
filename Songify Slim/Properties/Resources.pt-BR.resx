@@ -415,7 +415,7 @@
     <value>Console</value>
   </data>
   <data name="brw_cmd_skip" xml:space="preserve">
-    <value>Ignora a música atual (Broadcaster/Mod/Requester)</value>
+    <value>Ignora a música atual</value>
   </data>
   <data name="brw_cmd_skipvote" xml:space="preserve">
     <value>Inicia uma votação para pular a música atual</value>
@@ -437,9 +437,6 @@
   </data>
   <data name="Sw_System_OpenQueueOnStartup" xml:space="preserve">
     <value>Abrir janela de fila na inicialização</value>
-  </data>
-  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
-    <value>Anunciar a música automaticamente no bate-papo</value>
   </data>
   <data name="Sw_Integration_OnlyWorkWhenLive" xml:space="preserve">
     <value>Limite a atividade do Twitch para funcionar apenas quando a transmissão estiver ao vivo (é necessário fazer login no Twitch)</value>
@@ -636,9 +633,6 @@
   <data name="brw_cmd_songlike" xml:space="preserve">
     <value>Adiciona a música atual à lista de reprodução selecionada na configuração do Spotify.</value>
   </data>
-  <data name="brw_cmd_playpause" xml:space="preserve">
-    <value>Retoma ou pausa a reprodução atual.</value>
-  </data>
   <data name="sw_SpotifySR_Userlevel_command" xml:space="preserve">
     <value>Níveis de usuário permitidos para comando SR</value>
   </data>
@@ -834,5 +828,95 @@
   </data>
   <data name="s_OK" xml:space="preserve">
     <value>OK</value>
+  </data>
+  <data name="brw_UserLevelTooLowCommand" xml:space="preserve">
+    <value>O nível do usuário é muito baixo para o comando !ssr</value>
+  </data>
+  <data name="brw_UserLevelTooLowReward" xml:space="preserve">
+    <value>O nível do usuário é muito baixo para a recompensa por solicitação de música</value>
+  </data>
+  <data name="sw_tcCommands_ShowUserLevelBadges" xml:space="preserve">
+    <value>Mostrar emblemas de nível de usuário</value>
+  </data>
+  <data name="s_Columns" xml:space="preserve">
+    <value>Colunas</value>
+  </data>
+  <data name="brw_cmd_play" xml:space="preserve">
+    <value>Retoma a reprodução atual.</value>
+  </data>
+  <data name="brw_cmd_queue" xml:space="preserve">
+    <value>Retorna as primeiras 5 músicas da fila de reprodução atual</value>
+  </data>
+  <data name="brw_cmd_pause" xml:space="preserve">
+    <value>Pausa a reprodução atual.</value>
+  </data>
+  <data name="brw_cmd_commands" xml:space="preserve">
+    <value>Retorna todos os comandos ativos do Songify.</value>
+  </data>
+  <data name="Param_User_Desc" xml:space="preserve">
+    <value>O usuário que acionou o comando ou canalizou a recompensa</value>
+  </data>
+  <data name="Param_Requester_Desc" xml:space="preserve">
+    <value>O solicitante da música atual</value>
+  </data>
+  <data name="Param_ConditionalText_Desc" xml:space="preserve">
+    <value>O texto dentro de '{{' e '}}' só será postado se a música atual for uma solicitação de música</value>
+  </data>
+  <data name="Param_Artist_Desc" xml:space="preserve">
+    <value>Artistas para a música atual ou solicitação de música</value>
+  </data>
+  <data name="Param_SingleArtist_Desc" xml:space="preserve">
+    <value>Artista principal da música atual ou solicitação de música</value>
+  </data>
+  <data name="Param_ErrorMessage_Desc" xml:space="preserve">
+    <value>Mensagem de erro se ocorrer um erro</value>
+  </data>
+  <data name="Param_MaxLength_Desc" xml:space="preserve">
+    <value>Duração máxima da música em minutos</value>
+  </data>
+  <data name="Param_MaxRequests_Desc" xml:space="preserve">
+    <value>Máximo de solicitações por usuário</value>
+  </data>
+  <data name="Param_SongFormat_Desc" xml:space="preserve">
+    <value>{Artist} - {Title}</value>
+  </data>
+  <data name="Param_PlaylistName_Desc" xml:space="preserve">
+    <value>Nome da lista de reprodução</value>
+  </data>
+  <data name="Param_PlaylistUrl_Desc" xml:space="preserve">
+    <value>URL da lista de reprodução</value>
+  </data>
+  <data name="Param_SongList_Desc" xml:space="preserve">
+    <value>Somente para o comando !pos, cria uma lista de músicas que o usuário tem na fila com sua posição</value>
+  </data>
+  <data name="Param_Votes_Desc" xml:space="preserve">
+    <value>Número de votos para votos/total</value>
+  </data>
+  <data name="Param_Cooldown_Desc" xml:space="preserve">
+    <value>O tempo de espera em segundos (para cd global e cd do usuário)</value>
+  </data>
+  <data name="Param_Url_Desc" xml:space="preserve">
+    <value>URL da música do Spotify</value>
+  </data>
+  <data name="Param_Queue_Desc" xml:space="preserve">
+    <value>Próximas 5 músicas na fila</value>
+  </data>
+  <data name="Param_Commands_Desc" xml:space="preserve">
+    <value>Lista de todos os comandos ativos</value>
+  </data>
+  <data name="s_Copied" xml:space="preserve">
+    <value>Copiado</value>
+  </data>
+  <data name="sw_ResponseVariables" xml:space="preserve">
+    <value>Variáveis de Resposta</value>
+  </data>
+  <data name="lang_beBY" xml:space="preserve">
+    <value>Bielorrusso</value>
+  </data>
+  <data name="Param_Userlevel_Desc" xml:space="preserve">
+    <value>O nível de usuário dos usuários (seguidor, assinante etc.)</value>
+  </data>
+  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
+    <value>Anunciar música automaticamente no chat (usa a resposta !song)</value>
   </data>
 </root>
