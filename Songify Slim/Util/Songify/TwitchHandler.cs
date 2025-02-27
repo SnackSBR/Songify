@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using MahApps.Metro.Controls.Dialogs;
+﻿using MahApps.Metro.Controls.Dialogs;
 using MahApps.Metro.IconPacks;
 using Songify_Slim.Models;
 using Songify_Slim.Properties;
@@ -34,7 +33,6 @@ using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Events;
@@ -48,21 +46,11 @@ using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
 using static Songify_Slim.Util.General.Enums;
 using System.ComponentModel;
-using System.Configuration;
 using TwitchLib.Api.Helix.Models.Chat.GetChatters;
 using System.Web;
-using System.Windows.Interop;
-using Windows.Media.Playback;
 using Songify_Slim.Util.Spotify;
-using TwitchLib.Api.Helix.Models.Moderation.GetModerators;
-using Image = Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models.Image;
-using TwitchLib.Api.Helix.Models.Soundtrack;
-using TwitchLib.PubSub.Models.Responses;
-using TwitchLib.Api.Helix.Models.Channels.GetChannelVIPs;
 using TwitchLib.Api.Helix.Models.Chat.GetUserChatColor;
 using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
-using TwitchLib.Api.Core.Models.Undocumented.Chatters;
-using TwitchLib.Api.V5.Models.Clips;
 
 
 namespace Songify_Slim.Util.Songify
@@ -574,7 +562,7 @@ namespace Songify_Slim.Util.Songify
             RequestObject reqObj;
 
             string[] words = message.Message.Split(' ');
-            if (message.IsModerator || message.IsBroadcaster)
+            if (message.UserDetail.IsModerator || message.IsBroadcaster)
             {
                 if (words.Length > 1)
                 {
@@ -980,7 +968,7 @@ namespace Songify_Slim.Util.Songify
             // if onCooldown skips
             if (_onCooldown)
             {
-                Client.SendMessage(Settings.Settings.TwChannel, CreateCooldownResponse(message));
+                await Client.SendMessageAsync(Settings.Settings.TwChannel, CreateCooldownResponse(message));
                 return;
             }
 
@@ -1800,11 +1788,11 @@ namespace Songify_Slim.Util.Songify
             List<TwitchUserLevels> userLevels = [];
 
             if (o.IsBroadcaster) userLevels.Add(TwitchUserLevels.Broadcaster);
-			if (o.IsModerator) userLevels.Add(TwitchUserLevels.Moderator);
-            if (o.IsVip) userLevels.Add(TwitchUserLevels.Vip);
-            if (o.IsSubscriber && subtier is 0 or 1) userLevels.Add(TwitchUserLevels.Subscriber);
-            if (o.IsSubscriber && subtier is 2) userLevels.Add(TwitchUserLevels.SubscriberT2);
-            if (o.IsSubscriber && subtier is 3) userLevels.Add(TwitchUserLevels.SubscriberT3);
+			if (o.UserDetail.IsModerator) userLevels.Add(TwitchUserLevels.Moderator);
+            if (o.UserDetail.IsVip) userLevels.Add(TwitchUserLevels.Vip);
+            if (o.UserDetail.IsSubscriber && subtier is 0 or 1) userLevels.Add(TwitchUserLevels.Subscriber);
+            if (o.UserDetail.IsSubscriber && subtier is 2) userLevels.Add(TwitchUserLevels.SubscriberT2);
+            if (o.UserDetail.IsSubscriber && subtier is 3) userLevels.Add(TwitchUserLevels.SubscriberT3);
 
             TwitchUser user = GlobalObjects.TwitchUsers.FirstOrDefault(user => user.UserId == o.UserId);
             if (user != null)
@@ -2583,7 +2571,7 @@ namespace Songify_Slim.Util.Songify
 
             // Play command (!play)
             else if (e.ChatMessage.Message.ToLower() == "!play" &&
-                     ((e.ChatMessage.IsBroadcaster || e.ChatMessage.IsModerator) &&
+                     ((e.ChatMessage.IsBroadcaster || e.ChatMessage.UserDetail.IsModerator) &&
                       Settings.Settings.BotCmdPlayPause))
             {
                 try
@@ -2599,7 +2587,7 @@ namespace Songify_Slim.Util.Songify
 
             // Pause command (!pause)
             else if (e.ChatMessage.Message.ToLower() == "!pause" &&
-                     ((e.ChatMessage.IsBroadcaster || e.ChatMessage.IsModerator) &&
+                     ((e.ChatMessage.IsBroadcaster || e.ChatMessage.UserDetail.IsModerator) &&
                       Settings.Settings.BotCmdPlayPause))
             {
                 try
@@ -2615,11 +2603,11 @@ namespace Songify_Slim.Util.Songify
             // Vol coammand without arguments (!vol)
             else if (e.ChatMessage.Message.ToLower() == "!vol" && Settings.Settings.BotCmdVol)
             {
-                bool isBroadcasterOrModerator = e.ChatMessage.IsBroadcaster || e.ChatMessage.IsModerator;
+                bool isBroadcasterOrModerator = e.ChatMessage.IsBroadcaster || e.ChatMessage.UserDetail.IsModerator;
 
                 if (Settings.Settings.BotCmdVolIgnoreMod)
                 {
-                    Client.SendMessage(e.ChatMessage.Channel,
+                    await Client.SendMessageAsync(e.ChatMessage.Channel,
                         $"Spotify volume is at {(await SpotifyApiHandler.Spotify.GetPlaybackAsync()).Device.VolumePercent}%");
                 }
                 else
@@ -2627,7 +2615,7 @@ namespace Songify_Slim.Util.Songify
                     if (isBroadcasterOrModerator)
                     {
                         // Always send the message if BotCmdVol is true and BotCmdVolIgnoreMod is false
-                        Client.SendMessage(e.ChatMessage.Channel,
+                        await Client.SendMessageAsync(e.ChatMessage.Channel,
                             $"Spotify volume is at {(await SpotifyApiHandler.Spotify.GetPlaybackAsync()).Device.VolumePercent}%");
                     }
                 }
@@ -2635,7 +2623,7 @@ namespace Songify_Slim.Util.Songify
 
             // Bansong command (!bansong)
             else if (e.ChatMessage.Message.ToLower() == "!bansong" &&
-                     (e.ChatMessage.IsBroadcaster || e.ChatMessage.IsModerator))
+                     (e.ChatMessage.IsBroadcaster || e.ChatMessage.UserDetail.IsModerator))
             {
                 TrackInfo currentSong = GlobalObjects.CurrentSong;
                 if (currentSong == null ||
@@ -3925,7 +3913,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static void SendChatMessage(string channel, string message)
+        private static async void SendChatMessage(string channel, string message)
         {
             if (Client.IsConnected && Client.JoinedChannels.Any(c => c.Channel == channel))
                 await Client.SendMessageAsync(channel, message);

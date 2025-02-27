@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections;
-using Songify_Slim.Views;
+﻿using Songify_Slim.Views;
 using System.Collections.Generic;
 using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
-using YamlDotNet.Core.Tokens;
-using Newtonsoft.Json.Linq;
 using Songify_Slim.Models;
 using Songify_Slim.Util.Songify;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using Songify_Slim.UserControls;
 
 namespace Songify_Slim.Util.Settings
 {
@@ -291,8 +283,6 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static bool DonationReminder { get => GetDonationReminder(); set => SetDonationReminder(value); }
-
-        public static bool DownloadCanvas { get => GetDownloadCanvas(); set => SetDownloadCanvas(value); }
 
         public static bool DownloadCover
         {
@@ -663,7 +653,7 @@ namespace Songify_Slim.Util.Settings
         public static string WebUserAgent => GetWebua();
 
         public static bool DownloadCanvas { get => GetDownloadCanvas(); set => SetDownloadCanvas(value); }
-        public static string YTMDToken { get => GetYTMDToken(); set => SetYTMDToken(value); }
+        public static string YtmdToken { get => GetYtmdToken(); set => SetYtmdToken(value); }
         public static string BotCmdCommandsTrigger { get => GetBotCmdCommandsTrigger(); set => SetBotCmdCommandsTrigger(value); }
         public static string BotRespUserlevelTooLowCommand { get => GetBotRespUserlevelTooLowCommand(); set => SetBotRespUserlevelTooLowCommand(value); }
         public static bool ShowUserLevelBadges { get => GetShowUserLevelBadges(); set => SetShowUserLevelBadges(value); }
@@ -929,8 +919,8 @@ namespace Songify_Slim.Util.Settings
                 Uuid = GetUuid(),
                 WebServerPort = GetWebServerPort(),
                 WebUserAgent = GetWebua(),
-                YTMDToken = GetYTMDToken(),
-				FulfillRedemption = GetFulfillRedemption(),
+                YtmdToken = GetYtmdToken(),
+                FulfillRedemption = GetFulfillRedemption(),
                 GenreBlacklist = GetGenreBlacklist(),
             };
 
@@ -2564,24 +2554,24 @@ namespace Songify_Slim.Util.Settings
 
         private static bool GetFulfillRedemption()
         {
-            return _currentConfig.AppConfig.FulfillRedemption;
+            return CurrentConfig.AppConfig.FulfillRedemption;
         }
 
         private static List<string> GetGenreBlacklist()
         {
-            return _currentConfig.AppConfig.GenreBlacklist;
+            return CurrentConfig.AppConfig.GenreBlacklist;
         }
 
         private static void SetFulfillRedemption(bool value)
         {
-            _currentConfig.AppConfig.FulfillRedemption = value;
-            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+            CurrentConfig.AppConfig.FulfillRedemption = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
         }
 
         private static void SetGenreBlacklist(List<string> value)
         {
-            _currentConfig.AppConfig.GenreBlacklist = value;
-            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, _currentConfig.AppConfig);
+            CurrentConfig.AppConfig.GenreBlacklist = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
         }
 		
 		public static bool FulfillRedemption 

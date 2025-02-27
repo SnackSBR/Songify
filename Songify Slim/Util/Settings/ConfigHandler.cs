@@ -554,7 +554,7 @@ namespace Songify_Slim.Util.Settings
         public List<int> UnlimitedSrUserlevelsCommand { get; set; }
 
         public string WebUserAgent = "Songify Data Provider";
-        public string YTMDToken;
+        public string YtmdToken;
 		
 		public bool FulfillRedemption { get; set; }
         public List<string> GenreBlacklist { get; set; } = [];
