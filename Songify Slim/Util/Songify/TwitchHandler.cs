@@ -46,8 +46,13 @@ using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
 using static Songify_Slim.Util.General.Enums;
 using System.ComponentModel;
+using System.Configuration;
+using System.Globalization;
 using TwitchLib.Api.Helix.Models.Chat.GetChatters;
 using System.Web;
+using System.Windows.Interop;
+using Windows.Media.Playback;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Songify_Slim.Util.Spotify;
 using TwitchLib.Api.Helix.Models.Chat.GetUserChatColor;
 using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
@@ -183,6 +188,8 @@ namespace Songify_Slim.Util.Songify
                                 Settings.Settings.TwAcc = account == TwitchAccount.Main
                                     ? Settings.Settings.TwitchUser.Login
                                     : Settings.Settings.TwitchBotUser.Login;
+
+                                
                                 return Task.CompletedTask;
                             });
                     }
@@ -205,6 +212,7 @@ namespace Songify_Slim.Util.Songify
                         }
                     }
 
+
                     if (_mainClient != null)
                     {
                         try
@@ -218,8 +226,8 @@ namespace Songify_Slim.Util.Songify
                         }
                     }
 
-                    BotConnect();
-                    MainConnect();
+                    await BotConnect();
+                    await MainConnect();
 
                     dynamic telemetryPayload = new
                     {
@@ -242,11 +250,11 @@ namespace Songify_Slim.Util.Songify
             _currentState = ioa.RequestClientAuthorization();
         }
 
-        public static async void BotConnect()
+        public static async Task BotConnect()
         {
             try
             {
-                MainConnect();
+                await MainConnect();
                 switch (Client)
                 {
                     case { IsConnected: true }:
@@ -268,7 +276,8 @@ namespace Songify_Slim.Util.Songify
                                 //(window as MainWindow).icon_Twitch.Foreground = new SolidColorBrush(Colors.Red);
                                 ((MainWindow)window).LblStatus.Content = "Please fill in Twitch credentials.";
                     });
-                    return;
+                    return ;
+
                 }
 
                 // creates new connection based on the credentials in settings
@@ -495,7 +504,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static async void HandleSongCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
+        private static  void HandleSongCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
         {
             try
             {
@@ -637,7 +646,7 @@ namespace Songify_Slim.Util.Songify
             SendOrAnnounceMessage(message.Channel, response, cmd);
         }
 
-        private static async void HandleQueueCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
+        private static  void HandleQueueCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
         {
             if (!IsUserAllowed(cmd.AllowedUserLevels, cmdParams, message.IsBroadcaster)) return;
             try
@@ -670,7 +679,7 @@ namespace Songify_Slim.Util.Songify
             SendOrAnnounceMessage(message.Channel, response, cmd);
         }
 
-        private static async void HandlePositionCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
+        private static  void HandlePositionCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
         {
             if (!IsUserAllowed(cmd.AllowedUserLevels, cmdParams, message.IsBroadcaster)) return;
             try
@@ -1061,7 +1070,6 @@ namespace Songify_Slim.Util.Songify
 
                     TwitchApi.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions, AuthScopes.Moderator_Read_Followers];
                     TokenCheck = await TwitchApi.Auth.ValidateAccessTokenAsync(Settings.Settings.TwitchAccessToken);
-
                     if (TokenCheck == null)
                     {
                         GlobalObjects.TwitchUserTokenExpired = true;
@@ -1087,6 +1095,11 @@ namespace Songify_Slim.Util.Songify
                         });
                         return;
                     }
+
+                    DateTime tokenExpiryDate = DateTime.Now.AddSeconds(TokenCheck.ExpiresIn);
+
+                    Settings.Settings.TwitchAccessTokenExpiryDate = tokenExpiryDate;
+
 
                     GlobalObjects.TwitchUserTokenExpired = false;
                     _userId = TokenCheck.UserId;
@@ -1118,8 +1131,7 @@ namespace Songify_Slim.Util.Songify
 
                     // Get User Color:
                     GetUserChatColorResponse chatColorResponse = await TwitchApi.Helix.Chat.GetUserChatColorAsync([user.Id], Settings.Settings.TwitchAccessToken);
-                    if (chatColorResponse.Data.Any())
-                        Settings.Settings.TwitchUserColor = chatColorResponse.Data[0].Color;
+                    Settings.Settings.TwitchUserColor = chatColorResponse.Data.Any() ? chatColorResponse.Data[0].Color : "#f8953c";
 
                     ConfigHandler.WriteAllConfig(Settings.Settings.Export());
 
@@ -1171,6 +1183,10 @@ namespace Songify_Slim.Util.Songify
                         return;
                     }
 
+                    DateTime botTokenExpiryDate = DateTime.Now.AddSeconds(BotTokenCheck.ExpiresIn);
+
+                    Settings.Settings.BotAccessTokenExpiryDate = botTokenExpiryDate;
+
                     GlobalObjects.TwitchBotTokenExpired = false;
 
                     _userId = BotTokenCheck.UserId;
@@ -1191,16 +1207,16 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        public static async void MainConnect()
+        public static Task MainConnect()
         {
             switch (_mainClient)
             {
                 case { IsConnected: true }:
-                    return;
+                    return Task.CompletedTask;
 
                 case { IsConnected: false }:
                     await _mainClient.ConnectAsync();
-                    return;
+                    return Task.CompletedTask;
 
                 default:
                     try
@@ -1219,10 +1235,12 @@ namespace Songify_Slim.Util.Songify
                                         //(window as MainWindow).icon_Twitch.Foreground = new SolidColorBrush(Colors.Red);
                                         ((MainWindow)window).LblStatus.Content = "Please fill in Twitch credentials.";
                             });
-                            return;
+                            return Task.CompletedTask;
+
                         }
 
-                        if (Settings.Settings.TwitchUser == null) return;
+                        if (Settings.Settings.TwitchUser == null) return Task.CompletedTask;
+
                         // creates new connection based on the credentials in settings
                         ConnectionCredentials credentials = new(Settings.Settings.TwitchUser.DisplayName, $"oauth:{Settings.Settings.TwitchAccessToken}");
                         ClientOptions clientOptions = new(new ReconnectionPolicy(30000, null), true, 1500, TwitchLib.Communication.Enums.ClientType.Chat);
@@ -1239,6 +1257,7 @@ namespace Songify_Slim.Util.Songify
 
                     break;
             }
+            return Task.CompletedTask;
         }
 
         private static async Task _mainClient_OnConnected(object sender, TwitchLib.Client.Events.OnConnectedEventArgs e)
@@ -1990,7 +2009,7 @@ namespace Songify_Slim.Util.Songify
             if (!executed)
             {
                 // Optionally handle the case where no command matched.
-                Console.WriteLine("Command not found or not enabled.");
+                Logger.LogStr("Command not found or not enabled.");
             }
 
             return;
@@ -2666,10 +2685,32 @@ namespace Songify_Slim.Util.Songify
             ];
 
             string userId = o.UserId;
+            try
+            {
+                GlobalObjects.subscribers = await TwitchApiHelper.GetAllSubscribersAsync();
+                GlobalObjects.moderators = await TwitchApiHelper.GetAllModeratorsAsync();
+                GlobalObjects.vips = await TwitchApiHelper.GetAllVipsAsync();
+            }
+            catch (Exception e)
+            {
+                // Missing scopes, prompt to reconnect Twitch
+                Logger.LogExc(e);
+                Logger.LogStr("TWITCH: MISSING SCOPES, PLEASE RE-LINK TWITCH");
+                try
+                {
+                    new ToastContentBuilder()
+                        .AddText($"Songify")
+                        .AddText($"Can't fetch Twitch Users, please re-link Twitch")
+                        .AddAttributionText(DateTime.Now.ToString(CultureInfo.CurrentCulture))
+                        .Show();
+                }
+                catch (Exception exception)
+                {
+                    Logger.LogExc(exception);
+                }
+                return userLevels;
+            }
 
-            GlobalObjects.subscribers = await TwitchApiHelper.GetAllSubscribersAsync();
-            GlobalObjects.moderators = await TwitchApiHelper.GetAllModeratorsAsync();
-            GlobalObjects.vips = await TwitchApiHelper.GetAllVipsAsync();
 
             // Check if the user is a moderator
             bool isModerator = GlobalObjects.moderators.Any(m => m.UserId == userId);
