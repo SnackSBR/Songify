@@ -5,6 +5,7 @@ using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using Songify_Slim.Models;
 using Songify_Slim.Util.Songify;
+using System;
 
 namespace Songify_Slim.Util.Settings
 {

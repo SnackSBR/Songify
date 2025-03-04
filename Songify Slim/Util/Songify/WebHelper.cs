@@ -11,7 +11,6 @@ using Application = System.Windows.Application;
 using Newtonsoft.Json.Linq;
 using Songify_Slim.Models.YTMD;
 using Songify_Slim.Util.Songify.YTMDesktop;
-using TwitchLib.Api.Helix.Models.Soundtrack;
 
 namespace Songify_Slim.Util.Songify
 {

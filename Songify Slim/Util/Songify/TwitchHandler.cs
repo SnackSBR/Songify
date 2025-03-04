@@ -915,7 +915,7 @@ namespace Songify_Slim.Util.Songify
             {
                 string response = Settings.Settings.BotRespUserlevelTooLowCommand;
                 response = response.Replace("{user}", message.DisplayName);
-                response = response.Replace("{userlevel}", $"{Enum.GetName(typeof(TwitchUserLevels), cmdParams.UserLevel)}");
+                response = response.Replace("{userlevel}", $"{Enum.GetName(typeof(TwitchUserLevels), cmdParams.UserLevel.Last())}");
 
                 // Send a message to the user that their user level is too low to request songs
                 SendChatMessage(message.Channel, response);
@@ -1207,7 +1207,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        public static Task MainConnect()
+        public static async Task<Task> MainConnect()
         {
             switch (_mainClient)
             {
@@ -3631,13 +3631,11 @@ namespace Songify_Slim.Util.Songify
             {
                 Logger.LogStr($"PUBSUB: Channel reward {reward.Title} redeemed by {redeemedUser.DisplayName}");
                 List<int> userlevel = GlobalObjects.TwitchUsers.First(o => o.UserId == redeemedUser.Id).UserLevels;
-                Logger.LogStr(
-                    $"{redeemedUser.DisplayName}s userlevel = {userlevel} ({Enum.GetName(typeof(TwitchUserLevels), userlevel)})");
+                Logger.LogStr($"{redeemedUser.DisplayName}s userlevel = {userlevel.Last()} ({Enum.GetName(typeof(TwitchUserLevels), userlevel.Last())})");
                 string msg;
                 if (!userlevel.Contains(Settings.Settings.TwSrUserLevel))
                 {
-                    msg =
-                        $"Sorry, only {Enum.GetName(typeof(TwitchUserLevels), Settings.Settings.TwSrUserLevel)} or higher can request songs.";
+                    msg = $"Sorry, only {Enum.GetName(typeof(TwitchUserLevels), Settings.Settings.TwSrUserLevel)} or higher can request songs.";
                     //Send a Message to the user, that his Userlevel is too low
                     if (Settings.Settings.RefundConditons.Any(i => i == 0) && isManagable)
                     {
@@ -3689,8 +3687,7 @@ namespace Songify_Slim.Util.Songify
                     response = response.Replace("{user}", redeemedUser.DisplayName);
                     response = response.Replace("{artist}", "");
                     response = response.Replace("{title}", "");
-                    response = response.Replace("{maxreq}",
-                        $"{(TwitchUserLevels)userlevel.Max()} {GetMaxRequestsForUserLevel(userlevel.Max())}");
+                    response = response.Replace("{maxreq}", $"{(TwitchUserLevels)userlevel.Max()} {GetMaxRequestsForUserLevel(userlevel.Max())}");
                     response = response.Replace("{errormsg}", "");
                     response = CleanFormatString(response);
                     if (!string.IsNullOrEmpty(response))
