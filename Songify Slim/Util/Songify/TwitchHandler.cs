@@ -46,21 +46,13 @@ using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
 using static Songify_Slim.Util.General.Enums;
 using System.ComponentModel;
-using System.Configuration;
 using System.Globalization;
 using TwitchLib.Api.Helix.Models.Chat.GetChatters;
 using System.Web;
-using System.Windows.Interop;
-using Windows.Media.Playback;
-using Markdig.Syntax;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Songify_Slim.Util.Spotify;
 using TwitchLib.Api.Helix.Models.Chat.GetUserChatColor;
 using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
-using TwitchLib.Api.Core.Models.Undocumented.Chatters;
-using TwitchLib.Api.V5.Models.Clips;
-using Newtonsoft.Json.Linq;
-using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
 
 
 namespace Songify_Slim.Util.Songify
@@ -227,7 +219,7 @@ namespace Songify_Slim.Util.Songify
                         {
                             foreach (JoinedChannel mainClientJoinedChannel in _mainClient.JoinedChannels)
                             {
-                                _mainClient.LeaveChannel(mainClientJoinedChannel);
+                                await _mainClient.LeaveChannelAsync(mainClientJoinedChannel);
 
                             }
 							await _mainClient.DisconnectAsync();
