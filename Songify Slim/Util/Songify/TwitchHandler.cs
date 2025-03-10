@@ -866,6 +866,29 @@ namespace Songify_Slim.Util.Songify
 
         private static async void HandleSkipCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdParams)
         {
+
+            int count = 0;
+            string name = "";
+
+            Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                count = GlobalObjects.ReqList.Count;
+                if (count <= 0) return;
+                RequestObject firstRequest = GlobalObjects.ReqList.FirstOrDefault();
+                if (firstRequest == null || firstRequest.Trackid != GlobalObjects.CurrentSong.SongId) return;
+                name = firstRequest.Requester;
+                GlobalObjects.TwitchUsers.FirstOrDefault(o => o.DisplayName == name)
+                    ?.UpdateCommandTime(true);
+            });
+
+            if (count > 0 && name.Equals(message.DisplayName, StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (cmdParams.UserLevel.All(ul => ul != -1))
+                {
+                    cmdParams.UserLevel.Add(-1);
+                }
+            }
+
             if (!IsUserAllowed(cmd.AllowedUserLevels, cmdParams, message.IsBroadcaster))
                 return;
             try
@@ -884,8 +907,8 @@ namespace Songify_Slim.Util.Songify
             if (_skipCooldown)
                 return;
 
-            int count = 0;
-            string name = "";
+            count = 0;
+            name = "";
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -938,8 +961,8 @@ namespace Songify_Slim.Util.Songify
 
                 // Join the list into a single string
                 string allowedUserLevelsString = string.Join(", ", allowedUserLevels);
-                
-                
+
+
                 response = response.Replace("{userlevel}", allowedUserLevelsString);
 
                 SendChatMessage(message.Channel, response);
@@ -4264,7 +4287,7 @@ namespace Songify_Slim.Util.Songify
             if (LastCommandTime == null)
                 return true;
 
-            return (DateTime.Now - LastCommandTime.Value) > cooldown;
+            return DateTime.Now - LastCommandTime.Value > cooldown;
         }
 
         public int HighestUserLevel => (UserLevels != null && UserLevels.Any()) ? UserLevels.Max() : 0;
