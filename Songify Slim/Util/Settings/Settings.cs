@@ -350,7 +350,7 @@ namespace Songify_Slim.Util.Settings
             set => SetPauseOption(value);
         }
 
-        public static int Player
+        public static Enums.PlayerType Player
         {
             get => GetSource();
             set => SetSource(value);
@@ -668,6 +668,18 @@ namespace Songify_Slim.Util.Settings
         public static string TwitchUserColor { get => GetTwitchUserColor(); set => SetTwitchUserColor(value); }
         public static List<int> UnlimitedSrUserlevelsReward { get => GetUnlimitedSrUserlevelsReward(); set => SetUnlimitedSrUserlevelsReward(value); }
         public static DateTime TwitchAccessTokenExpiryDate { get => GetTwitchAccessTokenExpiryDate(); set => SetTwitchAccessTokenExpiryDate(value); }
+        public static bool HideSpotifyPremiumWarning { get => GetHideSpotifyPremiumWarning(); set => SetHideSpotifyPremiumWarning(value); }
+
+        private static void SetHideSpotifyPremiumWarning(bool value)
+        {
+            CurrentConfig.AppConfig.HideSpotifyPremiumWarning = value;
+            ConfigHandler.WriteAllConfig(CurrentConfig);
+        }
+
+        private static bool GetHideSpotifyPremiumWarning()
+        {
+            return CurrentConfig.AppConfig.HideSpotifyPremiumWarning;
+        }
 
         private static void SetTwitchAccessTokenExpiryDate(DateTime value)
         {
@@ -752,6 +764,18 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static string BotRespUserlevelTooLowReward { get => GetBotRespUserlevelTooLowReward(); set => SetBotRespUserlevelTooLowReward(value); }
+        public static string SpotifyRedirectUri { get => GetSpotifyRedirectUri();  set => SetSpotifyRedirectUri(value); }
+
+        private static string GetSpotifyRedirectUri()
+        {
+            return CurrentConfig.SpotifyCredentials.RedirectUri;
+        }
+
+        private static void SetSpotifyRedirectUri(string value)
+        {
+            CurrentConfig.SpotifyCredentials.RedirectUri = value;
+            ConfigHandler.WriteAllConfig(CurrentConfig);
+        }
 
         private static void SetBotRespUserlevelTooLowReward(string value)
         {
@@ -785,7 +809,8 @@ namespace Songify_Slim.Util.Settings
                 DeviceId = GetSpotifyDeviceId(),
                 RefreshToken = GetSpotifyRefreshToken(),
                 Profile = GetSpotifyProfile(),
-                PlaylistCache = GetSpotifyPlaylistCache()
+                PlaylistCache = GetSpotifyPlaylistCache(),
+                RedirectUri = GetSpotifyRedirectUri()                        
             };
 
             TwitchCredentials twitchCredentials = new()
@@ -951,6 +976,7 @@ namespace Songify_Slim.Util.Settings
                 YtmdToken = GetYtmdToken(),
                 FulfillRedemption = GetFulfillRedemption(),
                 GenreBlacklist = GetGenreBlacklist(),
+                HideSpotifyPremiumWarning = GetHideSpotifyPremiumWarning(),
             };
 
             TwitchCommands twitchCommands = new()
@@ -1430,7 +1456,7 @@ namespace Songify_Slim.Util.Settings
             return CurrentConfig.AppConfig.SongBlacklist;
         }
 
-        private static int GetSource()
+        private static Enums.PlayerType GetSource()
         {
             return CurrentConfig.AppConfig.Player;
         }
@@ -2245,7 +2271,7 @@ namespace Songify_Slim.Util.Settings
             ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
         }
 
-        private static void SetSource(int value)
+        private static void SetSource(Enums.PlayerType value)
         {
             CurrentConfig.AppConfig.Player = value;
             ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);

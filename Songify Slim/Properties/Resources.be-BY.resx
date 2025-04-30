@@ -134,7 +134,7 @@
     <comment>Header for the textbox when the song is already in queue</comment>
   </data>
   <data name="brw_Success" xml:space="preserve">
-    <value>Песня паспяхова дададзена</value>
+    <value>Песня паспяхова дададзена (каманда і ўзнагарода)</value>
     <comment>Header for the textbox when the song has been added successfully</comment>
   </data>
   <data name="bw_btnAdd" xml:space="preserve">
@@ -1084,6 +1084,12 @@
     <value>Беларуская</value>
   </data>
   <data name="Param_Userlevel_Desc" xml:space="preserve">
-    <value>Узровень карыстальніка (падпісчык, падпісчык і г.д.)</value>
+    <value>Узровень карыстальніка (Паслядоўнік, Падпісчык і г.д.)</value>
+  </data>
+  <data name="Param_TimeToPlay_Desc" xml:space="preserve">
+    <value>Час у фармаце хх:сс, калі запытаная песня пачне прайгравацца.</value>
+  </data>
+  <data name="brw_cmd_bansong" xml:space="preserve">
+    <value>Дадае бягучую песню ў спіс заблакаваных і прапускае яе.</value>
   </data>
 </root>

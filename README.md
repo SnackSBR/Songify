@@ -6,7 +6,7 @@ Your number one companion for all your musical needs while streaming.
 
 [![Dotnet](https://img.shields.io/badge/platform-windows-blue?style=for-the-badge&color=%23159643)]() 
 [![Dotnet](https://img.shields.io/badge/written_in-C%23-blue?style=for-the-badge&color=%23159643)]() 
-[![Static Badge](https://img.shields.io/badge/downloads-108k-blue?style=for-the-badge&color=%23159643)]()
+[![Static Badge](https://img.shields.io/badge/downloads-150k-blue?style=for-the-badge&color=%23159643)]()
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/songify-rocks/Songify?style=for-the-badge&color=%23159643)](https://github.com/songify-rocks/Songify/stargazers) 
 [![GitHub contributors](https://img.shields.io/github/contributors/songify-rocks/Songify?style=for-the-badge&color=%23159643)](https://github.com/songify-rocks/Songify/graphs/contributors)
@@ -89,3 +89,9 @@ Ready to take your stream to the next level? Check out our guides and FAQ to get
   - [Troubleshooting](https://github.com/songify-rocks/Songify/wiki/Troubleshooting)  
 
 Don’t let your music be an afterthought—make it the centerpiece of your stream with Songify!
+
+---
+
+### Powered by
+
+[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)

@@ -28,14 +28,16 @@ using TwitchLib.Api.Helix.Models.Channels.GetChannelVIPs;
 using TwitchLib.Api.Helix.Models.Chat.GetChatters;
 using TwitchLib.Api.Helix.Models.Moderation.GetModerators;
 using TwitchLib.Api.Helix.Models.Subscriptions;
+using System.Collections.Concurrent;
+using Songify_Slim.Models.WebSocket;
 
 namespace Songify_Slim.Util.General
 {
     public static class GlobalObjects
     {
         public const string ApiUrl = "https://api.songify.rocks/v2";
-        public static string BaseUrl = Settings.Settings.BaseUrl;
-        public static string AuthUrl = Settings.Settings.BaseUrl;
+        public static string BaseUrl = "https://songify.rocks";
+        public static string AuthUrl = "https://songify.rocks";
         public const string AltAuthUrl = "https://songify.bloemacher.com";
         public static string ApiResponse;
         public static string AppVersion;
@@ -65,10 +67,18 @@ namespace Songify_Slim.Util.General
         public static Tuple<bool, string> Canvas;
         public static ObservableCollection<TwitchUser> TwitchUsers = [];
         public static bool IoClientConnected = false;
+        private static readonly ConcurrentQueue<TaskCompletionSource<bool>> UpdateQueue = new();
+        private static bool _isProcessingQueue;
+        private static string _lastQueueHash = "";
+        public static YoutubeData YoutubeData = null;
+
 
         public static string RootDirectory => string.IsNullOrEmpty(Settings.Settings.Directory)
             ? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)
             : Settings.Settings.Directory;
+
+        public static SimpleTwitchUser FullRequester { get; set; }
+
 
         public static T FindChild<T>(DependencyObject parent, string childName)
             where T : DependencyObject
@@ -180,16 +190,51 @@ namespace Songify_Slim.Util.General
             return null;
         }
 
-        public static void QueueUpdateQueueWindow()
+        public static Task QueueUpdateQueueWindow()
         {
-            UpdateQueueWindowTasks.Enqueue(UpdateQueueWindow);
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            UpdateQueue.Enqueue(tcs);
+            ProcessQueue();
+            return tcs.Task;
         }
 
+        private static async void ProcessQueue()
+        {
+            try
+            {
+                if (_isProcessingQueue)
+                    return;
+
+                _isProcessingQueue = true;
+
+                while (UpdateQueue.TryDequeue(out TaskCompletionSource<bool> tcs))
+                {
+                    try
+                    {
+                        await UpdateQueueWindow();
+                        tcs.SetResult(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogStr("CORE: UpdateQueueWindow threw an exception.");
+                        Logger.LogExc(ex);
+                        tcs.SetException(ex);
+                    }
+                }
+
+                _isProcessingQueue = false;
+            }
+            catch (Exception e)
+            {
+                Logger.LogExc(e);
+            }
+        }
         public static async Task UpdateQueueWindow()
         {
+            Debug.Write(Settings.Settings.Player);
             switch (Settings.Settings.Player)
             {
-                case 0:
+                case Enums.PlayerType.SpotifyWeb:
                     try
                     {
                         SimpleQueue queue = await SpotifyApiHandler.GetQueueInfo();
@@ -216,12 +261,12 @@ namespace Songify_Slim.Util.General
 
                                 try
                                 {
-                                    await WebHelper.QueueRequest(WebHelper.RequestMethod.Patch, Json.Serialize(payload));
+                                    await WebHelper.QueueRequest(WebHelper.RequestMethod.Patch,
+                                        Json.Serialize(payload));
                                     itemsToRemove.Add(requestObject);
                                 }
                                 catch (Exception ex)
                                 {
-                                    // Log or handle error for individual request failure
                                     Logger.LogStr("API: Error updating value in web queue");
                                     Logger.LogExc(ex);
                                 }
@@ -229,7 +274,7 @@ namespace Songify_Slim.Util.General
 
                             foreach (RequestObject item in itemsToRemove)
                             {
-                                await Application.Current.Dispatcher.BeginInvoke(() =>
+                                await Application.Current.Dispatcher.InvokeAsync(() =>
                                 {
                                     try
                                     {
@@ -237,11 +282,11 @@ namespace Songify_Slim.Util.General
                                         {
                                             return;
                                         }
+
                                         ReqList.Remove(item);
                                     }
                                     catch (Exception ex)
                                     {
-                                        // Log or handle error during list update
                                         Logger.LogStr("CORE: Error removing item from ReqList");
                                         Logger.LogExc(ex);
                                     }
@@ -250,142 +295,133 @@ namespace Songify_Slim.Util.General
                         }
 
                         bool isLikedSongsPlaylist = false;
+                        Dictionary<string, bool> isInLikedSongs = [];
 
-                        await Application.Current.Dispatcher.Invoke(async () =>
+                        List<string> ids = queue.Queue.Select(track => track.Id).ToList();
+                        if (CurrentSong != null && !ids.Contains(CurrentSong.SongId))
+                            ids.Insert(0, CurrentSong.SongId); // Ensure current song is included
+
+                        try
+                        {
+                            if (!string.IsNullOrEmpty(Settings.Settings.SpotifyPlaylistId) ||
+                                Settings.Settings.SpotifyPlaylistId == "-1")
+                            {
+                                isLikedSongsPlaylist = true;
+                                ListResponse<bool> x = await SpotifyApiHandler.Spotify.CheckSavedTracksAsync(ids);
+
+                                for (int i = 0; i < ids.Count; i++)
+                                {
+                                    isInLikedSongs[ids[i]] = x.List[i];
+                                }
+                            }
+                            else
+                            {
+                                isLikedSongsPlaylist = false;
+                                await LoadLikedPlaylistTracks();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            Logger.LogStr("Spotify API: Error getting Liked Songs");
+                        }
+
+                        List<RequestObject> tempQueueList = [];
+                        Dictionary<string, bool> replacementTracker = [];
+
+                        foreach (FullTrack fullTrack in queue.Queue)
                         {
                             try
                             {
-                                // Clear the tracks in the queue (ObservableCollection will notify the UI)
-                                Dictionary<string, bool> isInLikedSongs = [];
-                                try
-                                {
-                                    if (!string.IsNullOrEmpty(Settings.Settings.SpotifyPlaylistId) ||
-                                        Settings.Settings.SpotifyPlaylistId == "-1")
-                                    {
-                                        isLikedSongsPlaylist = true;
-                                        List<string> ids = queue.Queue.Select(track => track.Id).ToList();
-                                        ListResponse<bool> x = await SpotifyApiHandler.Spotify.CheckSavedTracksAsync(ids);
+                                bool isInLikedPlaylist = isLikedSongsPlaylist
+                                    ? isInLikedSongs.TryGetValue(fullTrack.Id, out bool boolValue) && boolValue
+                                    : LikedPlaylistTracks.Any(o => o.Track.Id == fullTrack.Id);
 
-                                        for (int i = 0; i < ids.Count; i++)
-                                        {
-                                            isInLikedSongs[ids[i]] = x.List[i];
-                                        }
-                                    }
-                                    else
-                                    {
-                                        isLikedSongsPlaylist = false;
-                                        await LoadLikedPlaylistTracks();
-                                    }
+                                RequestObject reqObj = ReqList.FirstOrDefault(o =>
+                                    o.Trackid == fullTrack.Id && !replacementTracker.ContainsKey(o.Trackid) &&
+                                    fullTrack.Id != CurrentSong.SongId);
+
+                                RequestObject skipObj = SkipList.FirstOrDefault(o => o.Trackid == fullTrack.Id);
+
+                                if (reqObj != null)
+                                {
+                                    reqObj.IsLiked = isInLikedPlaylist;
+                                    tempQueueList.Add(reqObj);
+                                    replacementTracker[reqObj.Trackid] = true;
                                 }
-                                catch (Exception)
+                                else if (skipObj != null)
                                 {
-                                    Logger.LogStr("Spotify API: Error getting Liked Songs");
+                                    skipObj.Requester = "Skipping...";
+                                    skipObj.IsLiked = isInLikedPlaylist;
+                                    tempQueueList.Add(skipObj);
+                                    replacementTracker[skipObj.Trackid] = true;
                                 }
-
-                                List<RequestObject> tempQueueList = [];
-                                // Dictionary to keep track of replacements
-                                Dictionary<string, bool> replacementTracker = [];
-
-                                // Process the queue
-                                foreach (FullTrack fullTrack in queue.Queue)
+                                else
                                 {
-                                    try
+                                    tempQueueList.Add(new RequestObject
                                     {
-                                        bool isInLikedPlaylist;
-                                        if (isLikedSongsPlaylist)
-                                            isInLikedPlaylist = isInLikedSongs.TryGetValue(fullTrack.Id, out bool boolValue) && boolValue;
-                                        else
-                                            isInLikedPlaylist = LikedPlaylistTracks.Any(o => o.Track.Id == fullTrack.Id);
-
-                                        // Determine if we have a matching request object that hasn't been used for replacement yet
-                                        RequestObject reqObj = ReqList.FirstOrDefault(o => o.Trackid == fullTrack.Id && !replacementTracker.ContainsKey(o.Trackid) && fullTrack.Id != CurrentSong.SongId);
-                                        RequestObject skipObj = SkipList.FirstOrDefault(o => o.Trackid == fullTrack.Id);
-
-                                        if (reqObj != null)
-                                        {
-                                            reqObj.IsLiked = isInLikedPlaylist;
-                                            tempQueueList.Add(reqObj);
-                                            replacementTracker[reqObj.Trackid] = true; // Mark this track ID as replaced
-                                        }
-                                        else if (skipObj != null)
-                                        {
-                                            skipObj.Requester = "Skipping...";
-                                            skipObj.IsLiked = isInLikedPlaylist;
-                                            tempQueueList.Add(skipObj);
-                                            replacementTracker[skipObj.Trackid] = true;
-                                        }
-                                        else
-                                        {
-                                            RequestObject newRequestObject = new()
-                                            {
-                                                Queueid = 0,
-                                                Uuid = Settings.Settings.Uuid,
-                                                Trackid = fullTrack.Id,
-                                                Artist = string.Join(", ", fullTrack.Artists.Select(o => o.Name)),
-                                                Title = fullTrack.Name,
-                                                Length = MsToMmSsConverter((int)fullTrack.DurationMs),
-                                                Requester = "Spotify",
-                                                Played = 0,
-                                                Albumcover = null,
-                                                IsLiked = isInLikedPlaylist
-                                            };
-
-                                            tempQueueList.Add(newRequestObject);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        // Log or handle error during queue processing
-                                        Logger.LogStr("CORE: Error processing queue item");
-                                        Logger.LogExc(ex);
-                                    }
-                                }
-
-                                QueueTracks = new ObservableCollection<RequestObject>(tempQueueList);
-
-                                // Check if the queue window is open and update it accordingly
-                                foreach (Window window in Application.Current.Windows)
-                                {
-                                    if (window.GetType() != typeof(WindowQueue))
-                                        continue;
-
-                                    if (window is WindowQueue windowQueue)
-                                    {
-                                        // Set the DataGrid's ItemsSource to the ObservableCollection (only done once)
-                                        windowQueue.dgv_Queue.ItemsSource = QueueTracks;
-                                        bool isInLikedPlaylist;
-
-                                        if (isLikedSongsPlaylist)
-                                        {
-                                            if (CurrentSong == null)
-                                                return;
-                                            ListResponse<bool> x = await SpotifyApiHandler.Spotify.CheckSavedTracksAsync([CurrentSong.SongId]);
-                                            isInLikedPlaylist = x.List.Count > 0 && x.List[0];
-                                        }
-                                        else
-                                            isInLikedPlaylist = LikedPlaylistTracks.Any(o => o.Track.Id == CurrentSong.SongId);
-
-                                        // Add the current song to the top of the queue
-                                        QueueTracks.Insert(0, new RequestObject
-                                        {
-                                            Queueid = 0,
-                                            Uuid = Settings.Settings.Uuid,
-                                            Trackid = CurrentSong.SongId,
-                                            Artist = CurrentSong.Artists,
-                                            Title = CurrentSong.Title,
-                                            Length = MsToMmSsConverter((int)CurrentSong.DurationMs),
-                                            Requester = string.IsNullOrEmpty(Requester) ? "Spotify" : Requester,
-                                            Played = -1,
-                                            Albumcover = null,
-                                            IsLiked = isInLikedPlaylist
-                                        });
-                                        windowQueue.UpdateQueueIcons();
-                                    }
+                                        Queueid = 0,
+                                        Uuid = Settings.Settings.Uuid,
+                                        Trackid = fullTrack.Id,
+                                        Artist = string.Join(", ", fullTrack.Artists.Select(o => o.Name)),
+                                        Title = fullTrack.Name,
+                                        Length = MsToMmSsConverter((int)fullTrack.DurationMs),
+                                        Requester = "Spotify",
+                                        Played = 0,
+                                        Albumcover = null,
+                                        IsLiked = isInLikedPlaylist
+                                    });
                                 }
                             }
                             catch (Exception ex)
                             {
-                                // Log or handle error during UI update
+                                Logger.LogStr("CORE: Error processing queue item");
+                                Logger.LogExc(ex);
+                            }
+                        }
+
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            try
+                            {
+                                QueueTracks.Clear();
+                                foreach (var item in tempQueueList)
+                                {
+                                    QueueTracks.Add(item);
+                                }
+
+                                foreach (Window window in Application.Current.Windows)
+                                {
+                                    if (window is not WindowQueue windowQueue)
+                                        continue;
+
+                                    if (windowQueue.dgv_Queue.ItemsSource != QueueTracks)
+                                    {
+                                        windowQueue.dgv_Queue.ItemsSource = QueueTracks;
+                                    }
+
+                                    bool isInLikedPlaylist = isLikedSongsPlaylist
+                                        ? isInLikedSongs.TryGetValue(CurrentSong.SongId, out var liked) && liked
+                                        : LikedPlaylistTracks.Any(o => o.Track.Id == CurrentSong.SongId);
+
+                                    QueueTracks.Insert(0, new RequestObject
+                                    {
+                                        Queueid = 0,
+                                        Uuid = Settings.Settings.Uuid,
+                                        Trackid = CurrentSong.SongId,
+                                        Artist = CurrentSong.Artists,
+                                        Title = CurrentSong.Title,
+                                        Length = MsToMmSsConverter((int)CurrentSong.DurationMs),
+                                        Requester = string.IsNullOrEmpty(Requester) ? "Spotify" : Requester,
+                                        Played = -1,
+                                        Albumcover = null,
+                                        IsLiked = isInLikedPlaylist
+                                    });
+
+                                    windowQueue.UpdateQueueIcons();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
                                 Logger.LogStr("CORE: Encountered an error while updating the UI");
                                 Logger.LogExc(ex);
                             }
@@ -393,21 +429,19 @@ namespace Songify_Slim.Util.General
                     }
                     catch (Exception ex)
                     {
-                        // Log or handle error for the entire method failure
                         Logger.LogStr("CORE: Error in QueueUpdate method");
                         Logger.LogExc(ex);
                     }
 
                     break;
-
-                case 6:
+                case Enums.PlayerType.YtmDesktop:
                     YtmdResponse response = await WebHelper.GetYtmData();
                     if (response == null)
                     {
                         return;
                     }
 
-                    List<RequestObject> tempQueueList = [];
+                    List<RequestObject> tempQueueList2 = [];
                     List<QueueItem> queueItems = [];
 
                     // Find the index of the current VideoId
@@ -420,7 +454,7 @@ namespace Songify_Slim.Util.General
                         queueItems = response.Player.Queue.Items.Skip(index + 1).ToList();
                     }
 
-                    tempQueueList.AddRange(queueItems.Select(queueItem => new RequestObject
+                    tempQueueList2.AddRange(queueItems.Select(queueItem => new RequestObject
                     {
                         Queueid = 0,
                         Uuid = Settings.Settings.Uuid,
@@ -434,9 +468,9 @@ namespace Songify_Slim.Util.General
                         IsLiked = false
                     }));
 
-                    QueueTracks = new ObservableCollection<RequestObject>(tempQueueList);
+                    QueueTracks = new ObservableCollection<RequestObject>(tempQueueList2);
 
-                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+                    await Application.Current.Dispatcher.InvokeAsync(async () =>
                     {
                         // Check if the queue window is open and update it accordingly
                         foreach (Window window in Application.Current.Windows)
@@ -464,10 +498,25 @@ namespace Songify_Slim.Util.General
                             });
                             windowQueue.UpdateQueueIcons();
                         }
-                    }));
+                    });
+
                     break;
+                case Enums.PlayerType.SpotifyLegacy:
+                case Enums.PlayerType.Deezer:
+                case Enums.PlayerType.FooBar2000:
+                case Enums.PlayerType.Vlc:
+                case Enums.PlayerType.Youtube:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
+
+        private static string ComputeQueueHash(IEnumerable<FullTrack> queue)
+        {
+            return string.Join(",", queue.Select(t => t.Id)).GetHashCode().ToString();
+        }
+
 
         public static string SecondsToMmss(int totalSeconds)
         {
@@ -525,13 +574,13 @@ namespace Songify_Slim.Util.General
         {
             return Settings.Settings.Player switch
             {
-                0 => "Spotify API",
-                1 => "Spotify Legacy",
-                2 => "Deezer",
-                3 => "Foobar2000",
-                4 => "VLC",
-                5 => "YouTube",
-                6 => "YTM Desktop",
+                Enums.PlayerType.SpotifyWeb => "Spotify API",
+                Enums.PlayerType.SpotifyLegacy => "Spotify Legacy",
+                Enums.PlayerType.Deezer => "Deezer",
+                Enums.PlayerType.FooBar2000 => "Foobar2000",
+                Enums.PlayerType.Vlc => "VLC",
+                Enums.PlayerType.Youtube => "YouTube",
+                Enums.PlayerType.YtmDesktop => "YTM Desktop",
                 _ => ""
             };
         }

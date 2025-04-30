@@ -56,6 +56,12 @@ using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using TwitchLib.EventSub.Websockets.Extensions;
+using TwitchLib.Api.Core.Models.Undocumented.Chatters;
+using TwitchLib.Api.V5.Models.Clips;
+using Newtonsoft.Json.Linq;
+using TwitchLib.PubSub.Enums;
+using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
+using Message = TwitchLib.PubSub.Models.Responses.Message;
 
 
 namespace Songify_Slim.Util.Songify
@@ -342,6 +348,7 @@ namespace Songify_Slim.Util.Songify
                     CommandType.Songlike => HandleSongLikeCommand,
                     CommandType.Volume => HandleVolumeCommand,
                     CommandType.Commands => HandleCommandsCommand,
+                    CommandType.BanSong => HandleBanSongCommand,
                     _ => null
                 };
 
@@ -352,19 +359,12 @@ namespace Songify_Slim.Util.Songify
                 switch (command.CommandType)
                 {
                     case CommandType.SongRequest:
-                        break;
                     case CommandType.Next:
-                        break;
                     case CommandType.Play:
-                        break;
                     case CommandType.Pause:
-                        break;
                     case CommandType.Position:
-                        break;
                     case CommandType.Queue:
-                        break;
                     case CommandType.Remove:
-                        break;
                     case CommandType.Skip:
                         break;
                     case CommandType.Voteskip:
@@ -374,7 +374,6 @@ namespace Songify_Slim.Util.Songify
                         }
                         break;
                     case CommandType.Song:
-                        break;
                     case CommandType.Songlike:
                         break;
                     case CommandType.Volume:
@@ -384,12 +383,47 @@ namespace Songify_Slim.Util.Songify
                         }
                         break;
                     case CommandType.Commands:
+                    case CommandType.BanSong:
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
 
                 TwitchCommandHandler.RegisterCommand(command, handler);
+            }
+        }
+
+        private static async void HandleBanSongCommand(ChatMessage message, TwitchCommand cmd, TwitchCommandParams cmdparams)
+        {
+            try
+            {
+                TrackInfo currentSong = GlobalObjects.CurrentSong;
+                if (currentSong == null ||
+                    Settings.Settings.SongBlacklist.Any(track => track.TrackId == currentSong.SongId))
+                    return;
+
+                List<TrackItem> blacklist = Settings.Settings.SongBlacklist;
+                blacklist.Add(new TrackItem
+                {
+                    Artists = currentSong.Artists,
+                    TrackName = currentSong.Title,
+                    TrackId = currentSong.SongId,
+                    TrackUri = $"spotify:track:{currentSong.SongId}",
+                    ReadableName = $"{currentSong.Artists} - {currentSong.Title}"
+                });
+                Settings.Settings.SongBlacklist = Settings.Settings.SongBlacklist;
+
+                string response = cmd.Response;
+                response = response.Replace("{song}", $"{GlobalObjects.CurrentSong.Artists} - {GlobalObjects.CurrentSong.Title}");
+
+                SendOrAnnounceMessage(message.Channel, response, cmd);
+
+                await SpotifyApiHandler.SkipSong();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogStr("Error while banning song");
+                Logger.LogExc(ex);
             }
         }
 
@@ -647,7 +681,7 @@ namespace Songify_Slim.Util.Songify
                     break;
             }
 
-            GlobalObjects.QueueUpdateQueueWindow();
+            await GlobalObjects.QueueUpdateQueueWindow();
 
             string response = modAction
                 ? $"The request {tmp} requested by @{reqObj.Requester} has been removed."
@@ -1415,7 +1449,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static async void AddSong(string trackId, ChatMessage e, SongRequestSource source, TwitchUser user)
+        public static async void AddSong(string trackId, ChatMessage e, SongRequestSource source, TwitchUser user)
         {
             if (string.IsNullOrWhiteSpace(trackId))
             {
@@ -1423,11 +1457,28 @@ namespace Songify_Slim.Util.Songify
                 return;
             }
 
-            if (trackId == "shortened")
+            // Switch on trackId
+            switch (trackId)
             {
-                SendChatMessage(Settings.Settings.TwChannel,
-                    "Spotify short links are not supported. Please type in the full title or get the Spotify URI (starts with \"spotify:track:\")");
-                return;
+                case "shortened":
+                    SendChatMessage(Settings.Settings.TwChannel,
+                        "Spotify short links are not supported. Please type in the full title or get the Spotify URI (starts with \"spotify:track:\")");
+                    return;
+                case "episode":
+                    SendChatMessage(Settings.Settings.TwChannel, "Episodes are not supported. Please specify a track!");
+                    return;
+                case "artist":
+                    SendChatMessage(Settings.Settings.TwChannel, "Artist links are not supported. Please specify a track!");
+                    return;
+                case "album":
+                    SendChatMessage(Settings.Settings.TwChannel, "Album links are not supported. Please specify a track!");
+                    return;
+                case "playlist":
+                    SendChatMessage(Settings.Settings.TwChannel, "Playlist links are not supported. Please specify a track!");
+                    return;
+                case "audiobook":
+                    SendChatMessage(Settings.Settings.TwChannel, "Audiobook links are not supported. Please specify a track!");
+                    return;
             }
 
             if (Settings.Settings.LimitSrToPlaylist &&
@@ -1521,11 +1572,10 @@ namespace Songify_Slim.Util.Songify
 
             if (Settings.Settings.AddSrToPlaylist)
                 await AddToPlaylist(track.Id);
+
             string successResponse = Settings.Settings.Commands.First(cmd => cmd.Name == "Song Request").Response;
             response = CreateSuccessResponse(track, e.DisplayName, successResponse);
             TwitchCommand cmd = Settings.Settings.Commands.First(cmd => cmd.Name == "Song Request");
-
-            SendOrAnnounceMessage(e.Channel, response, cmd);
 
             // this will take the first 4 artists and join their names with ", "
             string artists = string.Join(", ", track.Artists
@@ -1533,6 +1583,16 @@ namespace Songify_Slim.Util.Songify
                 .Select(a => a.Name));
 
             string length = FormattedTime((int)track.DurationMs);
+
+            // Get the Requester Twitch User Object from the api 
+            GetUsersResponse x = await TwitchApi.Helix.Users.GetUsersAsync([e.UserId], null, Settings.Settings.TwitchAccessToken);
+
+            SimpleTwitchUser requestUser = null;
+            if (x.Users.Length > 0)
+            {
+                requestUser = x.Users[0].ToSimpleUser();
+            }
+
 
             RequestObject o = new()
             {
@@ -1542,15 +1602,167 @@ namespace Songify_Slim.Util.Songify
                 Title = track.Name,
                 Length = length,
                 Requester = e.DisplayName,
+                FullRequester = requestUser,
                 Played = 0,
                 Albumcover = track.Album.Images[0].Url,
             };
 
             await UploadToQueue(o);
-            GlobalObjects.QueueUpdateQueueWindow();
+            //GlobalObjects.QueueUpdateQueueWindow();
+
+
+            if (Settings.Settings.Commands.First(cmd => cmd.Name == "Song Request").Response.Contains("{ttp}"))
+            {
+                try
+                {
+                    if (GlobalObjects.QueueTracks.Count > 0)
+                    {
+
+
+                        //await Task.Delay(2000);
+
+                        int trackIndex = GlobalObjects.QueueTracks.IndexOf(
+                            GlobalObjects.QueueTracks.First(qT => qT.Trackid == track.Id));
+
+                        TimeSpan timeToplay = TimeSpan.Zero;
+                        TrackInfo tI;
+                        if (trackIndex == 0)
+                        {
+                            tI = await SpotifyApiHandler.GetSongInfo();
+                            if (tI != null)
+                            {
+                                if (tI.SongId != trackId)
+                                {
+                                    timeToplay += TimeSpan.FromMilliseconds(tI.DurationTotal - tI.Progress);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < trackIndex; i++)
+                            {
+                                RequestObject item = GlobalObjects.QueueTracks[i];
+
+                                if (i == 0 && item.Trackid == GlobalObjects.CurrentSong.SongId)
+                                {
+                                    tI = await SpotifyApiHandler.GetSongInfo();
+                                    if (tI == null) continue;
+                                    int timeLeft = Math.Max(0, tI.DurationTotal - tI.Progress);
+                                    timeToplay += TimeSpan.FromMilliseconds(timeLeft);
+                                }
+                                else
+                                {
+                                    timeToplay += ParseLength(item.Length);
+                                }
+                            }
+                        }
+                        string ttpString = $"{(int)timeToplay.TotalMinutes}m {timeToplay.Seconds}s";
+                        response = response.Replace("{ttp}", ttpString);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception);
+                }
+            }
+
+            response = response.Replace("{ttp}", "");
+            SendOrAnnounceMessage(e.Channel, response, cmd);
         }
 
-        public static async Task<ReturnObject> AddSong2(string trackId, string username)
+        private static string ValidateTrackId(string trackId)
+        {
+            if (string.IsNullOrWhiteSpace(trackId))
+                return "No song found.";
+
+            return trackId switch
+            {
+                "shortened" => "Spotify short links are not supported. Please type in the full title or use the Spotify URI (starts with \"spotify:track:\")",
+                "episode" => "Episodes are not supported. Please specify a track!",
+                "artist" => "Artist links are not supported. Please specify a track!",
+                "album" => "Album links are not supported. Please specify a track!",
+                "playlist" => "Playlist links are not supported. Please specify a track!",
+                "audiobook" => "Audiobook links are not supported. Please specify a track!",
+                _ => null
+            };
+        }
+
+        private static async Task<(bool valid, FullTrack track, string message)> TryGetValidTrack(string trackId)
+        {
+            if (IsSongBlacklisted(trackId))
+                return (false, null, "This song is blocked.");
+
+            FullTrack track = await SpotifyApiHandler.GetTrack(trackId);
+            if (track == null)
+                return (false, null, "No song found.");
+
+            if (IsTrackExplicit(track, null, out string msg)) return (false, null, msg);
+            if (IsTrackUnavailable(track, null, out msg)) return (false, null, msg);
+            if (IsArtistBlacklisted(track, null, out msg)) return (false, null, msg);
+            if (IsTrackTooLong(track, null, out msg)) return (false, null, msg);
+            if (IsTrackAlreadyInQueue(track, null, out msg)) return (false, null, msg);
+
+            return (true, track, null);
+        }
+
+        private static RequestObject BuildRequestObject(FullTrack track, string requester = "")
+        {
+            string artists = string.Join(", ", track.Artists.Take(4).Select(a => a.Name));
+            string length = FormattedTime((int)track.DurationMs);
+
+            return new RequestObject
+            {
+                Trackid = track.Id,
+                PlayerType = Enums.RequestPlayerType.Spotify.ToString(),
+                Artist = artists,
+                Title = track.Name,
+                Length = length,
+                Requester = requester,
+                FullRequester = null,
+                Played = 0,
+                Albumcover = track.Album.Images.FirstOrDefault()?.Url
+            };
+        }
+
+        public static async Task<string> AddSongFromWebsocket(string trackId, string requester = "")
+        {
+            string validationError = ValidateTrackId(trackId);
+            if (validationError != null)
+                return validationError;
+
+            (bool valid, FullTrack track, string message) = await TryGetValidTrack(trackId);
+            if (!valid)
+                return message;
+
+            SpotifyApiHandler.AddToQ("spotify:track:" + trackId);
+
+            if (Settings.Settings.AddSrToPlaylist)
+                await AddToPlaylist(track.Id);
+
+            RequestObject o = BuildRequestObject(track, requester);
+            await UploadToQueue(o);
+
+            //GlobalObjects.QueueUpdateQueueWindow();
+
+            return $"{string.Join(", ", track.Artists.Take(2).Select(a => a.Name))} - {track.Name} by has been added to the queue.";
+        }
+
+
+        public static TimeSpan ParseLength(string length)
+        {
+            string[] parts = length.Split(':');
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int minutes) &&
+                int.TryParse(parts[1], out int seconds))
+            {
+                return new TimeSpan(0, 0, minutes, seconds);
+            }
+
+            return TimeSpan.Zero;
+        }
+
+
+        private static async Task<ReturnObject> AddSong2(string trackId, string username)
         {
             // loads the blacklist from settings
             string response;
@@ -3104,6 +3316,7 @@ namespace Songify_Slim.Util.Songify
             response = response.Replace("{title}", track.Name);
             response = response.Replace("{maxreq}", "");
             response = response.Replace("{position}", $"{GlobalObjects.ReqList.Count}");
+            response = response.Replace("{pos}", $"{GlobalObjects.ReqList.Count}");
             response = response.Replace("{errormsg}", "");
             response = CleanFormatString(response);
 
@@ -3308,6 +3521,36 @@ namespace Songify_Slim.Util.Songify
             {
                 // search for a track with the id
                 return input.Replace("spotify:track:", "");
+            }
+
+            // If the input is a Spotify episode, return an empty string
+            if (input.StartsWith("https://open.spotify.com/episode/") || input.Contains("/episode/"))
+            {
+                return "episode";
+            }
+
+            // If the input is a Spotify episode, return an empty string
+            if (input.StartsWith("https://open.spotify.com/artist/") || input.Contains("/artist/"))
+            {
+                return "artist";
+            }
+
+            // If the input is a Spotify episode, return an empty string
+            if (input.StartsWith("https://open.spotify.com/album/") || input.Contains("/album/"))
+            {
+                return "album";
+            }
+
+            // If the input is a Spotify episode, return an empty string
+            if (input.StartsWith("https://open.spotify.com/playlist/") || input.Contains("/playlist/"))
+            {
+                return "playlist";
+            }
+
+            // If the input is a Spotify episode, return an empty string
+            if (input.StartsWith("https://open.spotify.com/audiobook/") || input.Contains("/audiobook/"))
+            {
+                return "audiobook";
             }
 
             if (input.StartsWith("https://open.spotify.com/"))
@@ -3795,7 +4038,6 @@ namespace Songify_Slim.Util.Songify
                 };
 
                 await WebHelper.QueueRequest(WebHelper.RequestMethod.Post, Json.Serialize(payload));
-                GlobalObjects.QueueUpdateQueueWindow();
             }
             catch (Exception ex)
             {

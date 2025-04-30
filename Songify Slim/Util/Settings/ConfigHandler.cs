@@ -191,7 +191,19 @@ namespace Songify_Slim.Util.Settings
                 IsAnnouncement = false,
                 AnnouncementColor = AnnouncementColor.Blue,
                 CustomProperties = new Dictionary<string, object>()
-            }
+            },
+
+           new()
+           {
+               CommandType = CommandType.BanSong,
+               Trigger = "bansong",
+               Response = "The song {song} has been added to the blocklist.",
+               IsEnabled = false,
+               AllowedUserLevels = [6],
+               IsAnnouncement = false,
+               AnnouncementColor = AnnouncementColor.Blue,
+               CustomProperties = new Dictionary<string, object>()
+           }
        ];
 
         public static void WriteConfig(ConfigTypes configType, object o, string path = null, bool isBackup = false)
@@ -293,6 +305,17 @@ namespace Songify_Slim.Util.Settings
                             config.TwitchCommands.Commands = DefaultCommands;
                         }
 
+                        foreach (CommandType cmdType in Enum.GetValues(typeof(CommandType)))
+                        {
+                            if (config.TwitchCommands.Commands.All(c => c.CommandType != cmdType))
+                            {
+                                config.TwitchCommands.Commands.Add(
+                                    DefaultCommands.First(c => c.CommandType == cmdType)
+                                    );
+                            }
+                        }
+
+
                         break;
 
                     default:
@@ -342,6 +365,7 @@ namespace Songify_Slim.Util.Settings
         public string ClientSecret { get; set; } = "";
         public PrivateProfile Profile { get; set; } = new();
         public List<SimplePlaylist> PlaylistCache { get; set; } = [];
+        public string RedirectUri { get; set; } = "localhost";
     }
 
     public class TwitchCredentials
@@ -507,7 +531,7 @@ namespace Songify_Slim.Util.Settings
         public int FontsizeQueue { get; set; } = 12;
         public int LastShownMotdId { get; set; }
         public int MaxSongLength { get; set; } = 10;
-        public int Player { get; internal set; }
+        public PlayerType Player { get; internal set; }
         public int PosX { get; set; } = 100;
         public int PosY { get; set; } = 100;
         public int RewardGoalAmount { get; set; }
@@ -555,6 +579,7 @@ namespace Songify_Slim.Util.Settings
         public bool ShowUserLevelBadges { get; set; } = true;
         public List<int> UnlimitedSrUserlevelsReward { get; set; } = [];
         public List<int> UnlimitedSrUserlevelsCommand { get; set; } = [];
+        public bool HideSpotifyPremiumWarning { get; set; }
 
         public string WebUserAgent = "Songify Data Provider";
         public string YtmdToken;

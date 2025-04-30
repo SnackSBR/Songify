@@ -1,6 +1,7 @@
 ﻿using MahApps.Metro.IconPacks;
 using Songify_Slim.Views;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -18,7 +19,14 @@ using Songify_Slim.Util.Songify;
 using Songify_Slim.Util.Spotify;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using TwitchLib.Api.Helix.Models.ChannelPoints.UpdateCustomReward;
+using TwitchLib.Client.Models;
 using Application = System.Windows.Application;
+using Newtonsoft.Json;
+using Songify_Slim.Models.WebSocket;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+
 
 namespace Songify_Slim.Util.General
 {
@@ -26,6 +34,9 @@ namespace Songify_Slim.Util.General
     {
         public bool Run;
         private HttpListener _listener = new();
+        private static readonly ConcurrentDictionary<Guid, WebSocket> ConnectedClients = new();
+        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<Guid, WebSocket>> ChannelClients = new();
+
 
         public void StartWebServer(int port)
         {
@@ -107,159 +118,201 @@ namespace Songify_Slim.Util.General
         private async void ProcessWebSocketRequest(HttpListenerContext context)
         {
             WebSocketContext webSocketContext = null;
+            Guid clientId = Guid.NewGuid();
+            string path = context.Request.Url.AbsolutePath;
+
             try
             {
-                webSocketContext = await context.AcceptWebSocketAsync(subProtocol: null);
-                WebSocket webSocket = webSocketContext.WebSocket;
+                webSocketContext = await context.AcceptWebSocketAsync(null);
+                WebSocket socket = webSocketContext.WebSocket;
 
-                while (webSocket.State == WebSocketState.Open)
+                // Add client to the appropriate channel
+                ConcurrentDictionary<Guid, WebSocket> clients = ChannelClients.GetOrAdd(path, _ => new ConcurrentDictionary<Guid, WebSocket>());
+                clients.TryAdd(clientId, socket);
+
+                while (socket.State == WebSocketState.Open)
                 {
                     ArraySegment<byte> buffer = new(new byte[4096]);
-                    WebSocketReceiveResult result;
-                    do
+                    WebSocketReceiveResult result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+
+                    if (buffer.Array == null) continue;
+
+                    string message = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, result.Count);
+                    string response = await ProcessMessage(message);
+
+                    if (!string.IsNullOrEmpty(response))
                     {
-                        result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
-
-                        // Decode the received message
-                        if (buffer.Array == null) continue;
-                        string message = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, result.Count);
-
-                        // Process the command
-                        string response = await ProcessCommand(message);
-
-                        if (!string.IsNullOrEmpty(response))
-                        {
-                            // If the command is recognized but has no response, send an appropriate response
-                            response = "Command executed: " + response;
-                        }
-
-                        // Encode the response message to byte array
-                        if (response == null) continue;
-                        byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                        ArraySegment<byte> responseBuffer = new(responseBytes);
-
-                        // Send the response back to the client
-                        await webSocket.SendAsync(responseBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
-                    } while (!result.EndOfMessage);
+                        byte[] responseBytes = Encoding.UTF8.GetBytes("Command executed: " + response);
+                        await socket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
                 }
             }
             catch (Exception e)
             {
                 Logger.LogExc(e);
-                // Handle exception
             }
             finally
             {
+                if (ChannelClients.TryGetValue(path, out var clients))
+                {
+                    clients.TryRemove(clientId, out _);
+                }
+
                 webSocketContext?.WebSocket?.Dispose();
             }
         }
 
-        private async Task<string> ProcessCommand(string message)
+        public async Task BroadcastToChannelAsync(string path, string message)
         {
-            string command = message.ToLower();
-            if (string.IsNullOrEmpty(command))
-                return "";
-            Logger.LogStr($"WEBSOCKET: Command '{message}' received");
-            // Here, we're assuming commands are simple text commands. Adjust parsing logic as necessary.
-            Device device;
+            if (!ChannelClients.TryGetValue(path, out var clients))
+                return;
 
-            // Check if the command starts with "vol_set_"
-            if (command.StartsWith("vol_set_"))
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+            var buffer = new ArraySegment<byte>(messageBytes);
+
+            foreach (KeyValuePair<Guid, WebSocket> pair in clients.ToArray())
             {
-                // Extract the numeric part of the command
-                string valuePart = command.Substring("vol_set_".Length);
+                Guid id = pair.Key;
+                WebSocket socket = pair.Value;
 
-                // Attempt to parse the numeric value
-                if (int.TryParse(valuePart, out int value))
+                try
                 {
-                    // Clamp the value between 0 and 100
-                    int clampedValue = MathUtils.Clamp(value, 0, 100); // For .NET Framework versions that don't have Math.Clamp, use your custom Clamp method
-
-                    // Now, apply the clamped value
-                    await SpotifyApiHandler.Spotify.SetVolumeAsync(clampedValue);
-                    return "Volume set to " + clampedValue + "%";
+                    if (socket.State == WebSocketState.Open)
+                    {
+                        await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                    else
+                    {
+                        clients.TryRemove(id, out _);
+                        socket.Dispose();
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Logger.LogExc(ex);
+                    clients.TryRemove(id, out _);
+                    socket.Dispose();
+                }
+            }
+        }
 
-                // Handle invalid value part
-                //Console.WriteLine("Invalid value for volume set command.");
-                return "Invalid value for volume set command.";
+
+        private static async Task<string> ProcessMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return "";
+
+            //Logger.LogStr($"WEBSOCKET: message '{message}' received");
+
+            WebSocketCommand command;
+            try
+            {
+                Debug.WriteLine(message);
+                command = JsonConvert.DeserializeObject<WebSocketCommand>(message);
+            }
+            catch (JsonException)
+            {
+                return "Invalid JSON.";
             }
 
-            switch (command)
+            if (command == null || string.IsNullOrWhiteSpace(command.Action))
+                return "Invalid command format.";
+
+            switch (command.Action)
             {
+                case "youtube":
+                    if (command.Data == null)
+                        return "Missing data for youtube.";
+                    YoutubeData youtubeData = command.Data.ToObject<YoutubeData>();
+                    if (youtubeData == null)
+                        return "Invalid data for youtube.";
+                    if (!Equals(GlobalObjects.YoutubeData, youtubeData))
+                        GlobalObjects.YoutubeData = youtubeData;
+                    return "";
+
+                case "queue_add":
+                    if (command.Data == null)
+                        return "Missing data for queue_add.";
+
+                    QueueAddData queueData = command.Data.ToObject<QueueAddData>();
+
+                    string trackId = await TwitchHandler.GetTrackIdFromInput(queueData.Track);
+                    return await TwitchHandler.AddSongFromWebsocket(trackId, queueData.Requester ?? "");
+
+                case "vol_set":
+                    if (command.Data == null)
+                        return "Missing data for vol_set.";
+
+                    VolumeData volData = command.Data.ToObject<VolumeData>();
+
+                    int volume = MathUtils.Clamp(volData.Value, 0, 100);
+                    await SpotifyApiHandler.Spotify.SetVolumeAsync(volume);
+                    return $"Volume set to {volume}%";
+
                 case "send_to_chat":
                     TwitchHandler.SendCurrSong();
-                    break;
+                    return "Current song sent to chat.";
 
                 case "block_artist":
                     BlockArtist();
-                    return "Artist blocked";
+                    return "Artist blocked.";
 
                 case "block_all_artists":
                     BlockAllArtists();
-                    return "All artists blocked";
+                    return "All artists blocked.";
 
                 case "block_song":
                     BlockSong();
-                    return "Song blocked";
+                    return "Song blocked.";
 
                 case "block_user":
                     string user = BlockUser();
-                    return !string.IsNullOrWhiteSpace(user) ? $"User {user} blocked" : "No user to block";
+                    return !string.IsNullOrWhiteSpace(user) ? $"User {user} blocked" : "No user to block.";
 
                 case "skip":
                 case "next":
                     await SpotifyApiHandler.SkipSong();
-                    return "Song skipped";
+                    return "Song skipped.";
 
                 case "play_pause":
                 case "pause":
                 case "play":
-                    PlaybackContext playbackContext = await SpotifyApiHandler.Spotify.GetPlaybackAsync();
+                    var playbackContext = await SpotifyApiHandler.Spotify.GetPlaybackAsync();
                     if (playbackContext.IsPlaying)
                     {
                         await SpotifyApiHandler.Spotify.PausePlaybackAsync(Settings.Settings.SpotifyDeviceId);
-                        return "Playback paused";
+                        return "Playback paused.";
                     }
                     await SpotifyApiHandler.Spotify.ResumePlaybackAsync(Settings.Settings.SpotifyDeviceId, "", null, "");
-                    return "Playback resumed";
+                    return "Playback resumed.";
 
                 case "stop_sr_reward":
-                    foreach (string s in Settings.Settings.TwRewardId)
+                    foreach (string rewardId in Settings.Settings.TwRewardId)
                     {
                         await TwitchHandler.TwitchApi.Helix.ChannelPoints.UpdateCustomRewardAsync(
-                            Settings.Settings.TwitchUser.Id, s, new UpdateCustomRewardRequest
+                            Settings.Settings.TwitchUser.Id, rewardId, new UpdateCustomRewardRequest
                             {
                                 IsPaused = true
                             }, Settings.Settings.TwitchAccessToken);
                     }
-                    break;
+                    return "Song request rewards stopped.";
 
                 case "vol_up":
-                    device = (await SpotifyApiHandler.Spotify.GetDevicesAsync()).Devices.FirstOrDefault(d => d.Id == Settings.Settings.SpotifyDeviceId);
-                    if (device == null)
-                    {
-                        return "No device found";
-                    }
-
-                    await SpotifyApiHandler.Spotify.SetVolumeAsync(MathUtils.Clamp(device.VolumePercent + 5, 0, 100), device.Id);
-                    return "Volume set to " + MathUtils.Clamp(device.VolumePercent + 5, 0, 100) + "%";
-
                 case "vol_down":
-                    device = (await SpotifyApiHandler.Spotify.GetDevicesAsync()).Devices.FirstOrDefault(d => d.Id == Settings.Settings.SpotifyDeviceId);
-                    if (device == null)
-                    {
-                        return "No device found";
-                    }
+                    var device = (await SpotifyApiHandler.Spotify.GetDevicesAsync()).Devices
+                        .FirstOrDefault(d => d.Id == Settings.Settings.SpotifyDeviceId);
 
-                    await SpotifyApiHandler.Spotify.SetVolumeAsync(MathUtils.Clamp(device.VolumePercent - 5, 0, 100), device.Id);
-                    return "Volume set to " + MathUtils.Clamp(device.VolumePercent - 5, 0, 100) + "%";
+                    if (device == null)
+                        return "No device found.";
+
+                    int change = command.Action == "vol_up" ? 5 : -5;
+                    int newVolume = MathUtils.Clamp(device.VolumePercent + change, 0, 100);
+                    await SpotifyApiHandler.Spotify.SetVolumeAsync(newVolume, device.Id);
+                    return $"Volume set to {newVolume}%";
 
                 default:
-                    return $"Unknown command: {message}";
+                    return $"Unknown action: {command.Action}";
             }
-
-            return "";
         }
 
         private static string BlockUser()

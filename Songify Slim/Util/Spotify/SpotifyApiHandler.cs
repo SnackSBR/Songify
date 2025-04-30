@@ -20,6 +20,8 @@ using Songify_Slim.Views;
 using Timer = System.Timers.Timer;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
+using MahApps.Metro.Controls.Dialogs;
+using MahApps.Metro.Controls;
 
 namespace Songify_Slim.Util.Spotify
 {
@@ -45,10 +47,18 @@ namespace Songify_Slim.Util.Spotify
             string url = altUrl ? GlobalObjects.AltAuthUrl : GlobalObjects.AuthUrl;
             Debug.WriteLine(url);
 
+            string uriType = Settings.Settings.SpotifyRedirectUri switch
+            {
+                "localhost" => "name",
+                "127.0.0.1" => "ip",
+                _ => "name"
+            };
+
+            Debug.WriteLine($"{url}/auth/auth3.php?id={Settings.Settings.ClientId}&secret={Settings.Settings.ClientSecret}&uri_type={uriType}");
+
             _auth = new TokenSwapAuth(
-                $"{url}/auth/auth.php?id=" + Settings.Settings.ClientId +
-                "&secret=" + Settings.Settings.ClientSecret,
-                "http://localhost:4002/auth",
+                $"{url}/auth/auth3.php?id={Settings.Settings.ClientId}&secret={Settings.Settings.ClientSecret}&uri_type={uriType}",
+                $"http://{Settings.Settings.SpotifyRedirectUri}:4002/auth",
                 Scope.UserReadPlaybackState | Scope.UserReadPrivate | Scope.UserModifyPlaybackState |
                 Scope.PlaylistModifyPublic | Scope.PlaylistModifyPrivate | Scope.PlaylistReadPrivate | Scope.UserLibraryModify | Scope.UserLibraryRead
             );
@@ -107,7 +117,7 @@ namespace Songify_Slim.Util.Spotify
                 }
 
                 // if the auth was successful save the new tokens and
-                _auth.AuthReceived += async (sender, response) =>
+                _auth.AuthReceived += static async (sender, response) =>
                 {
                     if (Authed)
                         return;
@@ -130,7 +140,7 @@ namespace Songify_Slim.Util.Spotify
                         Authed = true;
                         AuthRefresh.Start();
                         await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal,
-                            new Action(async () =>
+                            new Action(async void () =>
                             {
                                 foreach (Window window in Application.Current.Windows)
                                 {
@@ -148,12 +158,15 @@ namespace Songify_Slim.Util.Spotify
                                 Logger.LogStr(
                                     $"SPOTIFY: Connected Account: {GlobalObjects.SpotifyProfile.DisplayName}");
                                 Logger.LogStr($"SPOTIFY: Account Type: {GlobalObjects.SpotifyProfile.Product}");
+
                                 if (GlobalObjects.SpotifyProfile.Product == "premium") return;
+
+                                if (!Settings.Settings.HideSpotifyPremiumWarning)
+                                    await ShowPremiumRequiredDialogAsync();
+
                                 ((MainWindow)Application.Current.MainWindow).IconWebSpotify.Foreground =
                                     Brushes.DarkOrange;
-                                MessageBox.Show(
-                                    "Spotify Premium is required to perform song requests. This is a limitation by Spotify, not by us.",
-                                    "Spotify Premium required", MessageBoxButton.OK, MessageBoxImage.Warning);
+
                             }));
                     }
                     catch (Exception e)
@@ -201,6 +214,34 @@ namespace Songify_Slim.Util.Spotify
             }
         }
 
+        public static async Task ShowPremiumRequiredDialogAsync()
+        {
+            MetroDialogSettings dialogSettings = new MetroDialogSettings
+            {
+                AffirmativeButtonText = "OK",
+                NegativeButtonText = "Don't Show Again",
+                AnimateShow = true,
+                AnimateHide = true,
+            };
+
+            // You need a reference to the dialog host (usually the main window)
+            MetroWindow mainWindow = (Application.Current.MainWindow as MetroWindow);
+            if (mainWindow == null)
+                return;
+
+            MessageDialogResult result = await mainWindow.ShowMessageAsync(
+                "Spotify Premium required",
+                "Spotify Premium is required to perform song requests. Songify was unable to verify your Spotify Premium status.",
+                MessageDialogStyle.AffirmativeAndNegative,
+                dialogSettings);
+
+            if (result == MessageDialogResult.Negative)
+            {
+                Settings.Settings.HideSpotifyPremiumWarning = true;
+            }
+        }
+
+
         private static async void AuthRefresh_Elapsed(object sender, ElapsedEventArgs e)
         {
             try
@@ -215,14 +256,14 @@ namespace Songify_Slim.Util.Spotify
             }
         }
 
-        public static TrackInfo GetSongInfo()
+        public static async Task<TrackInfo> GetSongInfo()
         {
             // returns the trackinfo of the current playback (used in the fetch timer)
 
             PlaybackContext context;
             try
             {
-                context = Spotify.GetPlayback();
+                context = await Spotify.GetPlaybackAsync();
             }
             catch (Exception)
             {
@@ -259,17 +300,18 @@ namespace Songify_Slim.Util.Spotify
                 {
                     if (GlobalObjects.CurrentSong == null || GlobalObjects.CurrentSong.SongId != context.Item.Id)
                     {
-                        FullPlaylist playlist = Spotify.GetPlaylist(context.Context.Uri.Split(':')[2]);
+                        FullPlaylist playlist = await Spotify.GetPlaylistAsync(context.Context.Uri.Split(':')[2]);
                         if (playlist != null || !GlobalObjects.IsObjectDefault(playlist))
                         {
-                            _playlistInfo = new PlaylistInfo
-                            {
-                                Name = playlist.Name,
-                                Id = playlist.Id,
-                                Owner = playlist.Owner.DisplayName,
-                                Url = playlist.Uri,
-                                Image = playlist.Images[0].Url
-                            };
+                            if (playlist is { Id: not null })
+                                _playlistInfo = new PlaylistInfo
+                                {
+                                    Name = playlist.Name,
+                                    Id = playlist.Id,
+                                    Owner = playlist.Owner.DisplayName,
+                                    Url = playlist.Uri,
+                                    Image = playlist.Images[0].Url
+                                };
                         }
                     }
                 }

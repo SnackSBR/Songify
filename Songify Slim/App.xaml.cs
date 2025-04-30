@@ -17,7 +17,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using Markdig;
 
 namespace Songify_Slim
 {
@@ -27,7 +26,7 @@ namespace Songify_Slim
     public partial class App
     {
         private static Mutex _mutex;
-        public static bool IsBeta = true;
+        public static bool IsBeta = false;
         private const string PipeName = "SongifyPipe";
 
         private void Application_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -89,8 +88,6 @@ namespace Songify_Slim
             // Register global unhandled exception handler
             AppDomain currentDomain = AppDomain.CurrentDomain;
             currentDomain.UnhandledException += MyHandler;
-
-
             base.OnStartup(e);
 
             // Override the Markdig CodeStyleKey at runtime

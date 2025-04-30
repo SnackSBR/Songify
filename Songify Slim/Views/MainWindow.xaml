@@ -405,8 +405,10 @@
                 Padding="2"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
+                DisplayMemberPath="Name"
                 IsTabStop="False"
-                SelectedIndex="0" />
+                SelectedIndex="0"
+                SelectedValuePath="Value" />
             <controls:Badged
                 x:Name="Badge"
                 Margin="12,0,8,0"
@@ -530,15 +532,19 @@
                     VerticalAlignment="Center"
                     Stretch="UniformToFill"
                     Visibility="Collapsed" />
-                <MediaElement
-                    x:Name="CoverCanvas"
-                    Margin="10"
-                    IsMuted="True"
-                    LoadedBehavior="Manual"
-                    MediaEnded="CoverCanvas_OnMediaEnded"
-                    Stretch="UniformToFill"
-                    UnloadedBehavior="Stop"
-                    Visibility="Collapsed" />
+                <Grid ClipToBounds="True">
+                    <MediaElement
+                        x:Name="CoverCanvas"
+                        Margin="10"
+                        VerticalAlignment="Center"
+                        IsMuted="True"
+                        LoadedBehavior="Manual"
+                        MediaEnded="CoverCanvas_OnMediaEnded"
+                        RenderTransformOrigin="0.5,0.5"
+                        Stretch="UniformToFill"
+                        UnloadedBehavior="Stop"
+                        Visibility="Collapsed" />
+                </Grid>
             </Grid>
 
             <Viewbox

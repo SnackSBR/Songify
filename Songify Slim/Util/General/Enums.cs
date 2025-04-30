@@ -10,11 +10,38 @@ namespace Songify_Slim.Util.General;
 public static class Enums
 {
 
+    public enum PlayerType
+    {
+        [Description("Spotify API")]
+        SpotifyWeb,
+
+        [Description("Spotify (Legacy)")]
+        SpotifyLegacy,
+
+        [Description("Deezer")]
+        Deezer,
+
+        [Description("foobar2000")]
+        FooBar2000,
+
+        [Description("VLC Media Player")]
+        Vlc,
+
+        [Description("Browser Companion")]
+        Youtube,
+
+        [Description("YTM Desktop")]
+        YtmDesktop
+    }
+
+
     public enum SongRequestSource
     {
         Reward,
-        Command
+        Command,
+        Websocket
     }
+
     public enum CommandType
     {
         [Description("Song Request")]
@@ -42,7 +69,9 @@ public static class Enums
         [Description("Pause")]
         Pause,
         [Description("Commands")]
-        Commands
+        Commands,
+        [Description("Ban Song")]
+        BanSong,
     }
 
     public enum ConfigTypes

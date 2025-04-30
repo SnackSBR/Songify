@@ -1,83 +1,130 @@
-# Patchnotes 1.6.8 (BETA)
+# 🎉 Songify 1.7.0 – Official Release Notes  
+**🚨 Important: Please log out and back into Twitch to refresh your permissions.**
 
-## New Features
-### 🎵 YouTube Music Desktop Support
-- **Added support for [YTMDesktop](https://github.com/ytmdesktop/ytmdesktop)**  
-  Follow this [guide](https://github.com/songify-rocks/Songify/blob/master/YTMDestkop.md) to link it with Songify.
-  - Retrieves **Title, Artist, and Cover/Video Thumbnail**.
-  - The data is included in the **webserver response**.
-  - Compatible with all **widgets**.
-  - **NOTE:** This **does not enable YouTube song requests**.
+---
 
-### 🏆 Expanded User Levels
-- Songify can now check **subscriber tier levels** for song requests.
-- *(Note: You will need to re-link Twitch as we use new scopes.)*
+## 🔍 What’s New
 
-### 👥 Twitch User List
-- Added a new **Viewer List** window (**View -> Viewer List**) displaying all users in the chat.
-  - **SR**: Indicates if the user is blocked from making song requests.
-  - **Name**: The user's display name.
-  - **User Level**: The user's assigned level.
-  - **Sub Tier**: Subscriber Tier (-, 1, 2, 3).
-  - The user list syncs every **30 seconds**.
+- 🌐 **WebSocket Command Support**  
+  Control Songify externally with a powerful WebSocket API.  
+  [📄 View WebSocket Documentation](https://github.com/songify-rocks/Songify/blob/master/WebSockets.md)
 
-### 🔄 Inter-Process Communication (IPC)
-- If Songify is running in the **system tray**, opening another instance will now bring the existing instance into view instead of just doing nothing.
+- ⚠️ **"Ignore and Continue" Offline Mode**  
+  Start Songify without an internet connection using a new option in the startup dialog.
 
-### ⚙️ New Commands & Responses
-- **New `!commands` Command**: Lists all active commands in the chat.
-- **Additional Responses**:
-  - Added response when the **User Level is too low** for the `!ssr` command.
-  - Added response for **song request rewards**.
+- ⏱ **Time-to-Play Estimation (`{ttp}`)**  
+  The `{ttp}` placeholder shows an estimated time until a requested song will play (in `mm:ss` format).
 
-### 🎟️ Reward Actions & Skip Reward
-- **Reward Actions**: You can now choose between **song request** and **skip** actions for rewards.
-- **Skip Reward**: Users can now redeem a reward to skip the current song.
+- 🛠 **Redesigned Command System (Breaking Change)**  
+  The **Commands**, **Responses**, and **Rewards** sections have been completely redesigned for easier management.  
+  - All command settings are now stored in `TwitchCommands.yaml`  
+  - You will need to **reconfigure your commands manually** after updating
 
-## Changes
-### 🔑 Important: Spotify API Credentials Required
-- **As of version 1.6.8, you must provide your own Spotify API credentials.**  
-  This helps avoid rate limits and ensures faster app updates.  
-  📖 Follow [this guide](https://github.com/songify-rocks/Songify/wiki/Setting-up-song-requests#spotify-setup) for setup instructions.
+- 🎵 **YouTube Music Desktop & Browser Extension Support**  
+  - Full integration with [YouTube Music Desktop App](https://github.com/ytmdesktop/ytmdesktop)  
+  - Initial support for the upcoming **Songify Browser Extension** (awaiting approval from Chrome Web Store)
 
-### 📡 Stream & Internet Checks
-- **Stream Online Checks**: Now runs every **5 seconds** for improved accuracy.
-- **Improved Internet Checks**:
-  - More reliable connection verification.
-  - Songify **will no longer close** if the connection is lost. It will continue checking until the connection is restored.
+- 🖼️ **Requester Profile Picture Storage**  
+  Saves the current requester’s profile image as `requester.png`
 
-### 🔄 Reverted URL Encoding
-- A change from **version 1.6.7.0** has been reverted to improve search results.
+- 👤 **Viewer List Window**  
+  Displays all active Twitch chat users along with their SR status, user level, and sub tier. Refreshes every 30 seconds.
 
-### 🖥️ UI Improvements
-- **Redesigned Commands Tab**: Completely overhauled for better usability.
-- **Integrated Response Pairing**: Command responses are now part of the **Commands Tab**.
-  *(Song request responses remain in the Responses section to avoid clutter.)*
-- **Customizable User Levels**: Set user levels for each command.
-- **Chat Announcements**: Commands can now send responses as **chat announcements**.
-- **Updated UI**:
-  - **Responses Tab**: Refreshed interface.
-  - **Rewards Tab**: Now allows selection between **song request** or **skip** rewards.
-- **Settings Adjustments**:
-  - **Get Beta Updates** moved to **Settings -> System**.
-  - **Removed** the option to **hide profile pictures and usernames** from **Settings -> System**.
-  - **Adjusted Responses Tab** layout.
+- 🏆 **Expanded User Level Handling**  
+  Supports Twitch subscriber tiers (1, 2, 3).  
+  🔁 Requires re-linking your Twitch account due to updated scopes.
 
-### ⚡ Revamped Command Handling
-- The **command system** has been rewritten.
-- Commands are now managed in a **dedicated configuration file**: `TwitchCommands.yaml`.
+- 🔄 **Single Instance Handling**  
+  Launching a second instance will now bring the existing window to the foreground if minimized or hidden.
 
-## Fixes
-### 🛠️ Twitch Authentication
-- Resolved issues with the **alternative Twitch authentication code login**.
+---
 
-### 🐞 Miscellaneous Fixes
-- Fixed a crash when a **Windows notification** failed to send.
-- Fixed several **Spotify API-related issues**.
+## 🔧 Full Changelog
 
-## Languages
-### 🌍 Translation Improvements
-- Updated and corrected translations across multiple languages.
+### ⭐ New Features
 
-### 🔄 Language Switching
-- Switching languages **no longer requires a restart**.
+#### ✅ WebSocket Command Support
+Supports external commands:
+```queue_add, vol_set, skip, next, play, pause, play_pause, send_to_chat, block_song, block_artist, block_all_artists, block_user, stop_sr_reward, vol_up, vol_down```
+
+- Default requester is set to `""` if not provided.
+
+#### 🚫 “Ignore and Continue” Button
+Use Songify offline by skipping the internet check on startup.
+
+#### ⏳ Time-to-Play (`{ttp}`)
+- Estimate displayed in song request replies.
+- Reflects the current queue length and playback status.
+
+#### 🛠 Redesigned Command System
+- New UI for **Commands**, **Responses**, and **Rewards**
+- Commands now stored in `TwitchCommands.yaml`
+- ⚠️ You must **recreate your command setup manually**
+
+#### 🖼 Requester Profile Picture
+- Automatically saves a `requester.png` file for the current song requester.
+
+#### 👥 Viewer List
+- View all Twitch chat users, including their roles and request statuses.
+
+#### 🧠 Smart Instance Behavior
+- Prevents multiple Songify instances from running simultaneously.
+- Automatically brings the original window into focus.
+
+---
+
+### 🔁 Improvements
+
+#### 🎵 Song Request Logic
+- Improved handling of blocked songs, explicit content, and duplicates.
+- More reliable fallback logic when the queue window is closed.
+
+#### 📁 Output File Behavior
+- Output files are now cleared when using the “Clear Pause” option.
+
+#### 🔧 Async & Error Handling
+- Improved async methods for better performance and stability.
+- Refactored error handling to reduce app crashes and provide better debug output.
+
+#### 🔗 Spotify Auth Redirects
+- Updated internal redirect URI to `http://127.0.0.1` per Spotify’s latest requirements.  
+  [Read more](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
+
+---
+
+### 🐞 Bug Fixes
+
+- Prevented crash when `currSong` was null  
+- Fixed a rare crash during song requests  
+- Fixed issue where Songify starts minimized or off-screen  
+- Resolved Twitch reward sync UI display issues  
+- Fixed translation formatting and accuracy across languages  
+- Fixed Twitch command crashes caused by outdated scopes  
+- Resolved crashes related to Windows notifications  
+- Fixed display issues with token expiration time  
+- Logout and re-login now work without needing to restart the app  
+- Added refresh button to Twitch settings  
+- Token expiration is now shown for both main and bot accounts  
+
+---
+
+## 🛠 Additional Enhancements
+
+- 🎧 **Spotify Credentials Now Required**  
+  You must use your own Spotify API credentials.  
+  [🎓 Setup Guide](https://github.com/songify-rocks/Songify/wiki/Setting-up-song-requests#spotify-setup)
+
+- 🌐 **Improved Internet & Stream Checks**
+  - Internet check is now non-blocking — Songify stays open and retries automatically
+  - Stream status check now refreshes every 5 seconds
+
+- 🖥 **UI Upgrades**
+  - “Get Beta Updates” option moved to **Settings → System**
+  - Removed outdated “Hide user info” setting
+
+---
+
+## 🌍 Language Support
+
+- Polished translations across all supported languages  
+- Language switching now works **without requiring a restart**
