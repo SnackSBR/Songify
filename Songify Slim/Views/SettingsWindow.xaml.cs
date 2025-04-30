@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -545,6 +546,33 @@ namespace Songify_Slim.Views
                 return;
             }
 
+            // Shows a message box if the client id or secret is missing
+            MessageDialogResult res = await this.ShowMessageAsync(
+                "Important",
+                $"Just to make sure: Even though you have \"{((ComboBoxItem)CbxSpotifyRedirectUri.SelectedItem).Content}\" selected.\nWhich redirect URI are you using on the Spotify Developer App?",
+                MessageDialogStyle.AffirmativeAndNegativeAndSingleAuxiliary, new MetroDialogSettings
+                {
+                    ColorScheme = MetroDialogColorScheme.Theme,
+                    OwnerCanCloseWithDialog = true,
+                    AffirmativeButtonText = "http://127.0.0.1:4002/auth",
+                    NegativeButtonText = "http://localhost:4002/auth",
+                    FirstAuxiliaryButtonText = "Cancel",
+                });
+            switch (res)
+            {
+                case MessageDialogResult.Negative:
+                    Settings.SpotifyRedirectUri = "localhost";
+                    break;
+                case MessageDialogResult.Affirmative:
+                    Settings.SpotifyRedirectUri = "127.0.0.1";
+                    break;
+                case MessageDialogResult.Canceled:
+                case MessageDialogResult.FirstAuxiliary:
+                case MessageDialogResult.SecondAuxiliary:
+                default:
+                    return;
+            }
+
             // Links Spotify
             Settings.SpotifyRefreshToken = "";
             try
@@ -799,7 +827,7 @@ namespace Songify_Slim.Views
 
         private void NudChrome_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double?> e)
         {
-            // Sets the source (Spotify, Youtube, Nightbot)
+            // Sets the source (Spotify, BrowserCompanion, Nightbot)
             if (!IsLoaded)
                 // This prevents that the selected is always 0 (initialize components)
                 return;
@@ -1237,21 +1265,28 @@ namespace Songify_Slim.Views
             Settings.SpotifyPlaylistId = item.Playlist.Id;
         }
 
-        private void CbAccountSelection_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void CbAccountSelection_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded)
-                return;
-            ResetTwitchConnection();
+            try
+            {
+                if (!IsLoaded)
+                    return;
+                await ResetTwitchConnection();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogExc(ex);
+            }
         }
 
-        public void ResetTwitchConnection()
+        public async Task ResetTwitchConnection()
         {
             Settings.TwAcc = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).Username;
             Settings.TwOAuth = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).OAuth;
             TwitchHandler.Client?.DisconnectAsync();
             TwitchHandler.Client = null;
-            TwitchHandler.BotConnect();
-            TwitchHandler.MainConnect();
+            await TwitchHandler.BotConnect();
+            await TwitchHandler.MainConnect();
             _ = SetControls();
         }
 

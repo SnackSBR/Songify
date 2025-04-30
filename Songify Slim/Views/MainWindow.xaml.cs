@@ -216,37 +216,36 @@ namespace Songify_Slim.Views
             }
         }
 
-        private void BtnTwitch_Click(object sender, RoutedEventArgs e)
+        private async void BtnTwitch_Click(object sender, RoutedEventArgs e)
         {
-            // Tries to connect to the twitch service given the credentials in the settings or disconnects
-            MenuItem item = (MenuItem)sender;
-            switch (item.Tag.ToString())
+            try
             {
-                // Connects
-                case "Connect":
-                    TwitchHandler.BotConnect();
-                    TwitchHandler.MainConnect();
-                    break;
-                // Disconnects
-                case "Disconnect":
-                    TwitchHandler.ForceDisconnect = true;
-                    TwitchHandler.Client.DisconnectAsync();
-                    break;
+                // Tries to connect to the twitch service given the credentials in the settings or disconnects
+                MenuItem item = (MenuItem)sender;
+                switch (item.Tag.ToString())
+                {
+                    // Connects
+                    case "Connect":
+                        await TwitchHandler.BotConnect();
+                        await TwitchHandler.MainConnect();
+                        break;
+                    // Disconnects
+                    case "Disconnect":
+                        TwitchHandler.ForceDisconnect = true;
+                        TwitchHandler.Client.Disconnect();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogExc(ex);
             }
         }
 
-        private async void BtnWidget_Click(object sender, RoutedEventArgs e)
+        private void BtnWidget_Click(object sender, RoutedEventArgs e)
         {
-            if (Settings.Upload)
+            if (!Settings.Upload)
             {
-            }
-            else
-            {
-                // After user confirmation sends a command to the webserver which clears the queue
-                MessageDialogResult msgResult = await this.ShowMessageAsync("",
-                    Properties.Resources.mw_menu_Widget_disclaimer, MessageDialogStyle.AffirmativeAndNegative,
-                    new MetroDialogSettings { AffirmativeButtonText = "Yes", NegativeButtonText = "No" });
-                if (msgResult != MessageDialogResult.Affirmative) return;
                 Settings.Upload = true;
             }
 
@@ -258,10 +257,11 @@ namespace Songify_Slim.Views
             if (!IsLoaded)
                 return;
 
-            _selectedSource = (PlayerType)cbx_Source.SelectedValue;
-
-            // Store the actual enum value
-            Settings.Player = (PlayerType)cbx_Source.SelectedValue;
+            if (cbx_Source.SelectedValue is PlayerType selected)
+            {
+                _selectedSource = selected;
+                Settings.Player = selected;
+            }
 
             SetFetchTimer();
 
@@ -269,11 +269,11 @@ namespace Songify_Slim.Views
             {
                 switch (Settings.Player)
                 {
-                    case PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.Youtube when Settings.DownloadCover:
+                    case PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.BrowserCompanion or PlayerType.Ytmthch when Settings.DownloadCover:
                         img_cover.Visibility = Visibility.Visible;
                         GrdCover.Visibility = Visibility.Visible;
                         GlobalObjects.CurrentSong = null;
-                        if(Settings.Player == PlayerType.YtmDesktop)
+                        if (Settings.Player == PlayerType.YtmDesktop)
                             if (IoClient != null)
                                 IoClient.PrevResponse = new YtmdResponse();
                         break;
@@ -284,7 +284,6 @@ namespace Songify_Slim.Views
                 }
             }));
         }
-
 
         private void FetchTimer(int ms)
         {
@@ -308,11 +307,11 @@ namespace Songify_Slim.Views
         {
             switch (_selectedSource)
             {
-                case PlayerType.SpotifyLegacy:
-                    await Sf.FetchDesktopPlayer("Spotify");
-                    break;
+                //case PlayerType.SpotifyLegacy:
+                //    await Sf.FetchDesktopPlayer("Spotify");
+                //    break;
 
-                case PlayerType.Youtube:
+                case PlayerType.BrowserCompanion:
                     await Sf.FetchYoutubeData();
                     break;
 
@@ -324,16 +323,18 @@ namespace Songify_Slim.Views
                     await Sf.FetchDesktopPlayer("foobar2000");
                     break;
 
-                case PlayerType.Deezer:
-                    await Sf.FetchBrowser("Deezer");
-                    break;
-
                 case PlayerType.SpotifyWeb:
                     await Sf.FetchSpotifyWeb();
                     break;
 
                 case PlayerType.YtmDesktop:
-                    //await Sf.FetchYTM();
+                    await Sf.FetchYtm(IoClient.YoutubeMusicresponse);
+                    break;
+
+                case PlayerType.Ytmthch:
+                    await Sf.FetchYTMTHCH();
+                    break;
+                default:
                     break;
             }
         }
@@ -640,11 +641,11 @@ namespace Songify_Slim.Views
             // Initialize toast notification system (if needed)
             ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
             GrdDisclaimer.Visibility = Settings.DonationReminder ? Visibility.Collapsed : Visibility.Visible;
-
-            if (!Directory.Exists(Settings.Directory) && MessageBox.Show($"The directory \"{Settings.Directory}\" doesn't exist.\nThe output directory has been set to \"{Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)}\".", "Directory doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error) == MessageBoxResult.OK)
-            {
-                Settings.Directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            }
+            if (!string.IsNullOrEmpty(Settings.Directory))
+                if (!Directory.Exists(Settings.Directory) && MessageBox.Show($"The directory \"{Settings.Directory}\" doesn't exist.\nThe output directory has been set to \"{Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)}\".", "Directory doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error) == MessageBoxResult.OK)
+                {
+                    Settings.Directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                }
 
             Settings.MsgLoggingEnabled = false;
             AddSourcesToSourceBox();
@@ -726,13 +727,16 @@ namespace Songify_Slim.Views
             GlobalObjects.AppVersion = fvi.FileVersion;
 
             // set the cbx index to the correct source
-            cbx_Source.SelectedItem = Settings.Player;
-            _selectedSource = (PlayerType)cbx_Source.SelectedValue;
+            cbx_Source.SelectedValue = Settings.Player;
+            if (cbx_Source.SelectedValue is PlayerType selected)
+            {
+                _selectedSource = selected;
+            }
             cbx_Source.SelectionChanged += Cbx_Source_SelectionChanged;
 
             // text in the bottom right
             //LblCopyright.Content = App.IsBeta ? $"Songify v{GlobalObjects.AppVersion} BETA Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
-            LblCopyright.Content = App.IsBeta ? $"Songify v1.6.8 BETA Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
+            LblCopyright.Content = App.IsBeta ? "Songify v1.6.8 BETA Copyright ©" : $"Songify v{GlobalObjects.AppVersion} Copyright ©";
             //BetaPanel.Visibility = App.IsBeta ? Visibility.Visible : Visibility.Collapsed;
 
             tbFontSize.Text = Settings.Fontsize.ToString();
@@ -755,7 +759,7 @@ namespace Songify_Slim.Views
                 Logger.LogExc(e);
             }
 
-            img_cover.Visibility = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.Youtube ? Visibility.Visible : Visibility.Collapsed;
+            img_cover.Visibility = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.BrowserCompanion or PlayerType.Ytmthch ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public void PlayVideoFromUrl(string url)
@@ -863,10 +867,19 @@ namespace Songify_Slim.Views
 
                 if (Settings.UpdateRequired)
                 {
-                    Process.Start(new ProcessStartInfo(App.IsBeta ? "https://github.com/songify-rocks/Songify/blob/master/beta_update.md" : "https://github.com/songify-rocks/Songify/releases/latest")
+                    MessageDialogResult result = await this.ShowMessageAsync("Songify just updated", "Would you like to read the changelog? (recommended)\n\nYou can always find the changelog by clicking on File -> Patch Notes", MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings()
                     {
-                        UseShellExecute = true
+                        AffirmativeButtonText = "Yes",
+                        NegativeButtonText = "No"
                     });
+
+                    if (result == MessageDialogResult.Affirmative)
+                    {
+                        Process.Start(new ProcessStartInfo(App.IsBeta ? "https://github.com/songify-rocks/Songify/blob/master/beta_update.md" : "https://github.com/songify-rocks/Songify/releases/latest")
+                        {
+                            UseShellExecute = true
+                        });
+                    }
 
                     Settings.UpdateRequired = false;
                 }
@@ -916,12 +929,19 @@ namespace Songify_Slim.Views
         {
             _contextMenu.MenuItems.AddRange([
                 new System.Windows.Forms.MenuItem("Twitch", [
-                    new System.Windows.Forms.MenuItem("Connect", (_, _) =>
+                    new System.Windows.Forms.MenuItem("Connect", async void (_, _) =>
                     {
-                        TwitchHandler.BotConnect();
-                        TwitchHandler.MainConnect();
+                        try
+                        {
+                            await TwitchHandler.BotConnect();
+                            await TwitchHandler.MainConnect();
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.LogExc(e);
+                        }
                     }),
-                    new System.Windows.Forms.MenuItem("Disconnect", (_, _) => { TwitchHandler.Client.DisconnectAsync(); })
+                    new System.Windows.Forms.MenuItem("Disconnect", (_, _) => { TwitchHandler.Client.Disconnect(); })
                 ]),
                 new System.Windows.Forms.MenuItem("Show", (_, _) =>
                 {
@@ -1072,11 +1092,11 @@ namespace Songify_Slim.Views
 
             await img_cover.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
             {
-                Visibility vis = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.Youtube && Settings.DownloadCover
+                Visibility vis = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.BrowserCompanion or PlayerType.Ytmthch && Settings.DownloadCover
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-                double maxWidth = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.Youtube && Settings.DownloadCover
+                double maxWidth = _selectedSource is PlayerType.SpotifyWeb or PlayerType.YtmDesktop or PlayerType.BrowserCompanion or PlayerType.Ytmthch && Settings.DownloadCover
                     ? 500
                     : (int)Width - 6;
 
@@ -1153,22 +1173,20 @@ namespace Songify_Slim.Views
                     _timerFetcher.Enabled = false;
                     break;
 
-                case PlayerType.SpotifyLegacy:
+                //case PlayerType.SpotifyLegacy:
                 case PlayerType.Vlc:
                 case PlayerType.FooBar2000:
+                case PlayerType.Ytmthch:
                     FetchTimer(1000);
                     break;
-
-                case PlayerType.Youtube:
-                case PlayerType.Deezer:
-                    // Browser User-Set Poll Rate (seconds) * 1000 for milliseconds
-                    FetchTimer(Settings.ChromeFetchRate * 1000);
-                    break;
-
                 case PlayerType.SpotifyWeb:
                     // Prevent Rate Limiting
-                    FetchTimer(Settings.UseOwnApp ? 1000 : 20000);
+                    FetchTimer(1000);
                     break;
+                case PlayerType.BrowserCompanion:
+                default:
+                    break;
+
             }
         }
 
@@ -1245,7 +1263,11 @@ namespace Songify_Slim.Views
                     }
 
                     // if Settings.Player (int) != playerType.SpotifyWeb, hide the cover image
-                    if ((Settings.Player == PlayerType.SpotifyWeb || Settings.Player == PlayerType.YtmDesktop || Settings.Player == PlayerType.Youtube) && Settings.DownloadCover)
+                    if ((Settings.Player == PlayerType.SpotifyWeb
+                         || Settings.Player == PlayerType.YtmDesktop
+                         || Settings.Player == PlayerType.BrowserCompanion
+                         || Settings.Player == PlayerType.Ytmthch)
+                        && Settings.DownloadCover)
                     {
                         img_cover.Visibility = Visibility.Visible;
                         GrdCover.Visibility = Visibility.Visible;
@@ -1413,16 +1435,6 @@ namespace Songify_Slim.Views
                 CoverCanvas.Source = null; // Set Source to null to release the file lock
             }
         }
-		
-		private void Mi_Genre_Click(object sender, RoutedEventArgs e)
-        {
-            // Opens the Blacklist Window
-            if (!IsWindowOpen<Window_Genre>())
-            {
-                Window_Genre wB = new() { Top = Top, Left = Left };
-                wB.Show();
-			}
-		}
 
         private void BtnMenuViewUserList_Click(object sender, RoutedEventArgs e)
         {

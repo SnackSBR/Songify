@@ -69,7 +69,6 @@ namespace Songify_Slim.Util.General
         public static bool IoClientConnected = false;
         private static readonly ConcurrentQueue<TaskCompletionSource<bool>> UpdateQueue = new();
         private static bool _isProcessingQueue;
-        private static string _lastQueueHash = "";
         public static YoutubeData YoutubeData = null;
 
 
@@ -384,7 +383,7 @@ namespace Songify_Slim.Util.General
                             try
                             {
                                 QueueTracks.Clear();
-                                foreach (var item in tempQueueList)
+                                foreach (RequestObject item in tempQueueList)
                                 {
                                     QueueTracks.Add(item);
                                 }
@@ -470,7 +469,7 @@ namespace Songify_Slim.Util.General
 
                     QueueTracks = new ObservableCollection<RequestObject>(tempQueueList2);
 
-                    await Application.Current.Dispatcher.InvokeAsync(async () =>
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         // Check if the queue window is open and update it accordingly
                         foreach (Window window in Application.Current.Windows)
@@ -498,14 +497,16 @@ namespace Songify_Slim.Util.General
                             });
                             windowQueue.UpdateQueueIcons();
                         }
+
+                        return Task.CompletedTask;
                     });
 
                     break;
-                case Enums.PlayerType.SpotifyLegacy:
-                case Enums.PlayerType.Deezer:
+                //case Enums.PlayerType.SpotifyLegacy:
                 case Enums.PlayerType.FooBar2000:
                 case Enums.PlayerType.Vlc:
-                case Enums.PlayerType.Youtube:
+                case Enums.PlayerType.BrowserCompanion:
+                case Enums.PlayerType.Ytmthch:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -575,11 +576,10 @@ namespace Songify_Slim.Util.General
             return Settings.Settings.Player switch
             {
                 Enums.PlayerType.SpotifyWeb => "Spotify API",
-                Enums.PlayerType.SpotifyLegacy => "Spotify Legacy",
-                Enums.PlayerType.Deezer => "Deezer",
+                //Enums.PlayerType.SpotifyLegacy => "Spotify Legacy",
                 Enums.PlayerType.FooBar2000 => "Foobar2000",
                 Enums.PlayerType.Vlc => "VLC",
-                Enums.PlayerType.Youtube => "YouTube",
+                Enums.PlayerType.BrowserCompanion => "Browser Extension",
                 Enums.PlayerType.YtmDesktop => "YTM Desktop",
                 _ => ""
             };

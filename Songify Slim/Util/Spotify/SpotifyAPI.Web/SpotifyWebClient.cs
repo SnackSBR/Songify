@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using ControlzEx.Standard;
 using Newtonsoft.Json;
 using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
@@ -108,6 +107,8 @@ namespace Songify_Slim.Util.Spotify.SpotifyAPI.Web
                 string safeErrorMessage = error.Message
                     .Replace("{", "{{")
                     .Replace("}", "}}");
+
+                Logger.LogStr($"SPOTIFY API: {safeErrorMessage}");
 
                 return new Tuple<ResponseInfo, T>(
                     response.Item1,
