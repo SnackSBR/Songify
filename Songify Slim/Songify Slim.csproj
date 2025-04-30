@@ -211,6 +211,7 @@
     <Compile Include="Util\Songify\ApiClient.cs" />
     <Compile Include="Util\Songify\TwitchApiHelper.cs" />
     <Compile Include="Util\Songify\TwitchCommandHandler.cs" />
+    <Compile Include="Util\Songify\WebsocketHostedService.cs" />
     <Compile Include="Util\Songify\WebTitleFetcher.cs" />
     <Compile Include="Util\Songify\YTMDesktop\SocketIoClient.cs" />
     <Compile Include="Util\Songify\YTMDesktop\YTMDApiClient.cs" />
@@ -601,6 +602,12 @@
     <PackageReference Include="Microsoft.CSharp">
       <Version>4.7.0</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting">
+      <Version>9.0.4</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions">
+      <Version>9.0.4</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging">
       <Version>9.0.2</Version>
     </PackageReference>
@@ -788,10 +795,10 @@
       <Version>2.0.1</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.EventSub.Core">
-      <Version>2.5.3-preview-558d8a5</Version>
+      <Version>2.5.3-preview-7b3edb2</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.EventSub.Websockets">
-      <Version>0.5.0</Version>
+      <Version>0.6.0-preview-6f4cd77</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.PubSub">
       <Version>4.0.0-preview-10721e305d3e0b2ac6c93bb75d44140ce38b1322</Version>

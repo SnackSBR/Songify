@@ -53,6 +53,9 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using Songify_Slim.Util.Spotify;
 using TwitchLib.Api.Helix.Models.Chat.GetUserChatColor;
 using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using TwitchLib.EventSub.Websockets.Extensions;
 
 
 namespace Songify_Slim.Util.Songify
@@ -60,7 +63,8 @@ namespace Songify_Slim.Util.Songify
     // This class handles everything regarding twitch.tv
     public static class TwitchHandler
     {
-        public const bool PubSubEnabled = true;
+        public static bool PubSubEnabled = true;
+        public static IHost _host;
         public static ValidateAccessTokenResponse BotTokenCheck;
         public static TwitchClient Client;
         public static bool ForceDisconnect;
@@ -70,7 +74,7 @@ namespace Songify_Slim.Util.Songify
         private const int MaxConsecutiveFailures = 5;
         private static readonly Stopwatch CooldownStopwatch = new();
         private static readonly Timer CooldownTimer = new() { Interval = TimeSpan.FromSeconds(Settings.Settings.TwSrCooldown < 1 ? 0 : Settings.Settings.TwSrCooldown).TotalMilliseconds };
-        private static readonly Timer SkipCooldownTimer = new() { Interval = TimeSpan.FromSeconds(5).TotalMilliseconds };
+        public static readonly Timer SkipCooldownTimer = new() { Interval = TimeSpan.FromSeconds(5).TotalMilliseconds };
         private static readonly List<string> SkipVotes = [];
         private static bool toastSent = false;
 
@@ -78,8 +82,6 @@ namespace Songify_Slim.Util.Songify
         {
             Interval = TimeSpan.FromSeconds(5)
         };
-
-        private static readonly TwitchPubSub TwitchPubSub = new();
 
         // Threshold for setting IsLive to false
         private static readonly DispatcherTimer TwitchUserSyncTimer = new()
@@ -92,7 +94,7 @@ namespace Songify_Slim.Util.Songify
         private static string _joinedChannelId = "";
         private static TwitchClient _mainClient;
         private static bool _onCooldown;
-        private static bool _skipCooldown;
+        public static bool _skipCooldown;
         private static TwitchAPI _twitchApiBot;
         private static string _userId;
         private static Subscription[] _subscriptions = [];
@@ -870,7 +872,7 @@ namespace Songify_Slim.Util.Songify
             int count = 0;
             string name = "";
 
-            Application.Current.Dispatcher.InvokeAsync(() =>
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 count = GlobalObjects.ReqList.Count;
                 if (count <= 0) return;
@@ -1218,8 +1220,9 @@ namespace Songify_Slim.Util.Songify
                     TwitchUserSyncTimer.Start();
                     await RunTwitchUserSync();
                     //TODO: Enable PubSub when it's fixed in TwitchLib
-                    if (PubSubEnabled)
-                        CreatePubSubsConnection();
+
+                    _host = CreateHostBuilder().Build();
+                    await _host.StartAsync();
 
                     break;
 
@@ -1282,6 +1285,16 @@ namespace Songify_Slim.Util.Songify
                     throw new ArgumentOutOfRangeException(nameof(twitchAccount), twitchAccount, null);
             }
         }
+
+        private static IHostBuilder CreateHostBuilder() =>
+            Host.CreateDefaultBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddLogging();
+                    services.AddTwitchLibEventSubWebsockets();
+
+                    services.AddHostedService<WebsocketHostedService>();
+                });
 
         public static async Task<Task> MainConnect()
         {
@@ -1537,7 +1550,7 @@ namespace Songify_Slim.Util.Songify
             GlobalObjects.QueueUpdateQueueWindow();
         }
 
-        private static async Task<ReturnObject> AddSong2(string trackId, string username)
+        public static async Task<ReturnObject> AddSong2(string trackId, string username)
         {
             // loads the blacklist from settings
             string response;
@@ -1824,7 +1837,7 @@ namespace Songify_Slim.Util.Songify
             SendChatMessage(Settings.Settings.TwChannel, $"{msg}");
         }
 
-        private static async Task AnnounceInChat(string msg)
+        public static async Task AnnounceInChat(string msg)
         {
             Tuple<string, AnnouncementColors> tup = GetStringAndColor(msg);
             try
@@ -1938,7 +1951,7 @@ namespace Songify_Slim.Util.Songify
             return (userLevels.Max(), isAllowed);
         }
 
-        private static string CleanFormatString(string currSong)
+        public static string CleanFormatString(string currSong)
         {
             const RegexOptions options = RegexOptions.None;
             Regex regex = new("[ ]{2,}", options);
@@ -3031,30 +3044,6 @@ namespace Songify_Slim.Util.Songify
             return response;
         }
 
-        private static void CreatePubSubEventHandlers()
-        {
-            TwitchPubSub.OnListenResponse += OnListenResponse;
-            TwitchPubSub.OnPubSubServiceConnected += OnPubSubServiceConnected;
-            TwitchPubSub.OnPubSubServiceClosed += OnPubSubServiceClosed;
-            TwitchPubSub.OnPubSubServiceError += OnPubSubServiceError;
-            TwitchPubSub.OnChannelPointsRewardRedeemed += PubSub_OnChannelPointsRewardRedeemed;
-            TwitchPubSub.OnStreamUp += OnStreamUp;
-            TwitchPubSub.OnStreamDown += OnStreamDown;
-        }
-
-        private static void CreatePubSubListenEvents()
-        {
-            TwitchPubSub.ListenToVideoPlayback(Settings.Settings.TwitchChannelId);
-            TwitchPubSub.ListenToChannelPoints(Settings.Settings.TwitchChannelId);
-        }
-
-        private static async void CreatePubSubsConnection()
-        {
-            CreatePubSubEventHandlers();
-            CreatePubSubListenEvents();
-            await TwitchPubSub.ConnectAsync();
-        }
-
         private static string CreateResponse(PlaceholderContext context, string template)
         {
             // Use reflection to get all properties of PlaceholderContext
@@ -3197,7 +3186,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static int GetMaxRequestsForUserLevel(int userLevel)
+        public static int GetMaxRequestsForUserLevel(int userLevel)
         {
             return (TwitchUserLevels)userLevel switch
             {
@@ -3307,7 +3296,7 @@ namespace Songify_Slim.Util.Songify
             return new Tuple<string, AnnouncementColors>(item1: response, item2: colors);
         }
 
-        private static async Task<string> GetTrackIdFromInput(string input)
+        public static async Task<string> GetTrackIdFromInput(string input)
         {
             if (input.StartsWith("https://spotify.link/"))
             {
@@ -3592,7 +3581,7 @@ namespace Songify_Slim.Util.Songify
             return false;
         }
 
-        private static bool IsUserBlocked(string displayName)
+        public static bool IsUserBlocked(string displayName)
         {
             // checks if one of the artist in the requested song is on the blacklist
             return Settings.Settings.UserBlacklist.Any(s =>
@@ -3609,7 +3598,7 @@ namespace Songify_Slim.Util.Songify
             return parameters.Aggregate(source, (current, parameter) => current.Replace($"{{{parameter.Key}}}", parameter.Value));
         }
 
-        private static bool MaxQueueItems(string requester, int userLevel)
+        public static bool MaxQueueItems(string requester, int userLevel)
         {
             // Checks if the requester already reached max songrequests
             List<RequestObject> temp = GlobalObjects.ReqList.Where(x => x.Requester == requester).ToList();
@@ -3633,310 +3622,6 @@ namespace Songify_Slim.Util.Songify
         private static void OnListenResponse(object sender, OnListenResponseArgs e)
         {
             //Debug.WriteLine($"{DateTime.Now.ToShortTimeString()} PubSub: Response received: {e.Response}");
-        }
-
-        private static void OnPubSubServiceClosed(object sender, EventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                foreach (Window window in Application.Current.Windows)
-                {
-                    if (window.GetType() != typeof(MainWindow))
-                        continue;
-                    ((MainWindow)window).IconTwitchPubSub.Foreground = Brushes.IndianRed;
-                    ((MainWindow)window).IconTwitchPubSub.Kind = PackIconBootstrapIconsKind.TriangleFill;
-                }
-            });
-            //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Closed");
-            Logger.LogStr("PUBSUB: Disconnected");
-            CreatePubSubsConnection();
-        }
-
-        private static async void OnPubSubServiceConnected(object sender, EventArgs e)
-        {
-            await TwitchPubSub.SendTopicsAsync(Settings.Settings.TwitchAccessToken);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                foreach (Window window in Application.Current.Windows)
-                {
-                    if (window.GetType() != typeof(MainWindow))
-                        continue;
-                    ((MainWindow)window).IconTwitchPubSub.Foreground = Brushes.GreenYellow;
-                    ((MainWindow)window).IconTwitchPubSub.Kind = PackIconBootstrapIconsKind.CheckCircleFill;
-                }
-            });
-            Logger.LogStr("TWITCH PUBSUB: Connected");
-            //SendChatMessage(Settings.Settings.TwChannel, "Connected to PubSub");
-            //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Connected");
-        }
-
-        private static async void OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
-        {
-            //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Error {e.Exception}");
-            Logger.LogStr("PUBSUB: Error");
-            Logger.LogExc(e.Exception);
-            await TwitchPubSub.DisconnectAsync();
-            
-            try
-            {
-                if (PubSubEnabled)
-                    CreatePubSubsConnection();
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine(exception);
-                throw;
-            }
-        }
-
-        private static void OnStreamDown(object sender, OnStreamDownArgs args)
-        {
-            Logger.LogStr("TWITCH API: Stream is down");
-            Settings.Settings.IsLive = false;
-        }
-
-        private static void OnStreamUp(object sender, OnStreamUpArgs args)
-        {
-            Logger.LogStr("TWITCH API: Stream is up");
-            Settings.Settings.IsLive = true;
-        }
-
-        private static async void PubSub_OnChannelPointsRewardRedeemed(object sender, OnChannelPointsRewardRedeemedArgs e)
-        {
-            if (Client is not { IsConnected: true })
-                return;
-
-            Redemption redemption = e.RewardRedeemed.Redemption;
-            Reward reward = e.RewardRedeemed.Redemption.Reward;
-            TwitchLib.PubSub.Models.Responses.Messages.User redeemedUser = e.RewardRedeemed.Redemption.User;
-            string trackId;
-
-            List<CustomReward> managableRewards = await GetChannelRewards(true);
-            bool isManagable = managableRewards.Find(r => r.Id == reward.Id) != null;
-
-            if (Settings.Settings.TwRewardId.Any(o => o == reward.Id))
-            {
-                Logger.LogStr($"PUBSUB: Channel reward {reward.Title} redeemed by {redeemedUser.DisplayName}");
-                List<int> userlevel = GlobalObjects.TwitchUsers.First(o => o.UserId == redeemedUser.Id).UserLevels;
-                Logger.LogStr($"{redeemedUser.DisplayName}s userlevel = {userlevel.Last()} ({Enum.GetName(typeof(TwitchUserLevels), userlevel.Last())})");
-                string msg;
-                if (!userlevel.Contains(Settings.Settings.TwSrUserLevel))
-                {
-                    msg = $"Sorry, only {Enum.GetName(typeof(TwitchUserLevels), Settings.Settings.TwSrUserLevel)} or higher can request songs.";
-                    //Send a Message to the user, that his Userlevel is too low
-                    if (Settings.Settings.RefundConditons.Any(i => i == 0) && isManagable)
-                    {
-                        UpdateRedemptionStatusResponse updateRedemptionStatus =
-                            await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(
-                                Settings.Settings.TwitchUser.Id, reward.Id,
-                                [e.RewardRedeemed.Redemption.Id],
-                                new UpdateCustomRewardRedemptionStatusRequest
-                                { Status = CustomRewardRedemptionStatus.CANCELED });
-                        if (updateRedemptionStatus.Data[0].Status == CustomRewardRedemptionStatus.CANCELED)
-                        {
-                            msg += $" {Settings.Settings.BotRespRefund}";
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(msg))
-                        SendChatMessage(Settings.Settings.TwChannel, msg);
-                    return;
-                }
-
-                if (IsUserBlocked(redeemedUser.DisplayName))
-                {
-                    msg = "You are blocked from making Songrequests";
-                    //Send a Message to the user, that his Userlevel is too low
-                    if (Settings.Settings.RefundConditons.Any(i => i == 1) && isManagable)
-                    {
-                        UpdateRedemptionStatusResponse updateRedemptionStatus =
-                            await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(
-                                Settings.Settings.TwitchUser.Id, reward.Id,
-                                [e.RewardRedeemed.Redemption.Id],
-                                new UpdateCustomRewardRedemptionStatusRequest
-                                { Status = CustomRewardRedemptionStatus.CANCELED });
-                        if (updateRedemptionStatus.Data[0].Status == CustomRewardRedemptionStatus.CANCELED)
-                        {
-                            msg += $" {Settings.Settings.BotRespRefund}";
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(msg))
-                        SendChatMessage(Settings.Settings.TwChannel, msg);
-                    return;
-                }
-
-                // checks if the user has already the max amount of songs in the queue
-                if (!Settings.Settings.TwSrUnlimitedSr && MaxQueueItems(redeemedUser.DisplayName, userlevel.Max()))
-                {
-                    // if the user reached max requests in the queue skip and inform requester
-                    string response = Settings.Settings.BotRespMaxReq;
-                    response = response.Replace("{user}", redeemedUser.DisplayName);
-                    response = response.Replace("{artist}", "");
-                    response = response.Replace("{title}", "");
-                    response = response.Replace("{maxreq}", $"{(TwitchUserLevels)userlevel.Max()} {GetMaxRequestsForUserLevel(userlevel.Max())}");
-                    response = response.Replace("{errormsg}", "");
-                    response = CleanFormatString(response);
-                    if (!string.IsNullOrEmpty(response))
-                        SendChatMessage(Settings.Settings.TwChannel, response);
-                    return;
-                }
-
-                if (SpotifyApiHandler.Spotify == null)
-                {
-                    msg = "It seems that Spotify is not connected right now.";
-                    //Send a Message to the user, that his Userlevel is too low
-                    if (Settings.Settings.RefundConditons.Any(i => i == 2) && isManagable)
-                    {
-                        UpdateRedemptionStatusResponse updateRedemptionStatus =
-                            await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(
-                                Settings.Settings.TwitchUser.Id, reward.Id,
-                                [e.RewardRedeemed.Redemption.Id],
-                                new UpdateCustomRewardRedemptionStatusRequest
-                                { Status = CustomRewardRedemptionStatus.CANCELED });
-                        if (updateRedemptionStatus.Data[0].Status == CustomRewardRedemptionStatus.CANCELED)
-                        {
-                            msg += $" {Settings.Settings.BotRespRefund}";
-                        }
-                    }
-
-                    SendChatMessage(Settings.Settings.TwChannel, msg);
-                    return;
-                }
-
-                // if Spotify is connected and working manipulate the string and call methods to get the song info accordingly
-                trackId = await GetTrackIdFromInput(redemption.UserInput);
-                if (trackId == "shortened")
-                {
-                    SendChatMessage(Settings.Settings.TwChannel,
-                        "Spotify short links are not supported. Please type in the full title or get the Spotify URI (starts with \"spotify:track:\")");
-                    return;
-                }
-
-                if (!string.IsNullOrWhiteSpace(trackId))
-                {
-                    if (Settings.Settings.SongBlacklist.Any(s => s.TrackId == trackId))
-                    {
-                        Debug.WriteLine("This song is blocked");
-                        SendChatMessage(Settings.Settings.TwChannel, "This song is blocked");
-                        return;
-                    }
-
-                    ReturnObject returnObject = await AddSong2(trackId, redeemedUser.DisplayName);
-                    msg = returnObject.Msg;
-                    if (Settings.Settings.RefundConditons.Any(i => i == returnObject.Refundcondition) && isManagable)
-                    {
-                        try
-                        {
-                            UpdateRedemptionStatusResponse updateRedemptionStatus =
-                                await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(
-                                    Settings.Settings.TwitchUser.Id, reward.Id,
-                                    [e.RewardRedeemed.Redemption.Id],
-                                    new UpdateCustomRewardRedemptionStatusRequest
-                                    { Status = CustomRewardRedemptionStatus.CANCELED },
-                                    Settings.Settings.TwitchAccessToken);
-                            if (updateRedemptionStatus.Data[0].Status == CustomRewardRedemptionStatus.CANCELED)
-                            {
-                                msg += $" {Settings.Settings.BotRespRefund}";
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            Logger.LogStr(
-                                "PUBSUB: Could not refund points. Has the reward been created through the app?");
-                        }
-                    }
-                    else
-                    {
-                        if (Settings.Settings.FulfillRedemption && isManagable)
-                        {
-                            try
-                            {
-                                UpdateCustomRewardRedemptionStatusRequest request = new()
-                                {
-                                    Status = CustomRewardRedemptionStatus.FULFILLED
-                                };
-
-                                await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(Settings.Settings.TwitchUser.Id, reward.Id, [redemption.Id], request, Settings.Settings.TwitchAccessToken);
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.LogStr("[FulfillRedemption]: " + ex.Message);
-                                Logger.LogStr(ex.StackTrace);
-                            }
-                        }
-
-                    }
-
-                    if (!string.IsNullOrEmpty(msg))
-                    {
-                        if (msg.StartsWith("[announce "))
-                        {
-                            await AnnounceInChat(msg);
-                        }
-                        else
-                        {
-                            SendChatMessage(Settings.Settings.TwChannel, msg);
-                        }
-                    }
-                }
-                else
-                {
-                    // if no track has been found inform the requester
-                    string response = Settings.Settings.BotRespError;
-                    response = response.Replace("{user}", redeemedUser.DisplayName);
-                    response = response.Replace("{artist}", "");
-                    response = response.Replace("{title}", "");
-                    response = response.Replace("{maxreq}", "");
-                    response = response.Replace("{errormsg}", "Couldn't find a song matching your request.");
-
-                    //Send a Message to the user, that his Userlevel is too low
-                    if (Settings.Settings.RefundConditons.Any(i => i == 7) && isManagable)
-                    {
-                        try
-                        {
-                            UpdateRedemptionStatusResponse updateRedemptionStatus =
-                                await TwitchApi.Helix.ChannelPoints.UpdateRedemptionStatusAsync(
-                                    Settings.Settings.TwitchUser.Id, reward.Id,
-                                    [e.RewardRedeemed.Redemption.Id],
-                                    new UpdateCustomRewardRedemptionStatusRequest
-                                    { Status = CustomRewardRedemptionStatus.CANCELED });
-                            if (updateRedemptionStatus.Data[0].Status == CustomRewardRedemptionStatus.CANCELED)
-                            {
-                                response += $" {Settings.Settings.BotRespRefund}";
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            Logger.LogStr(
-                                "PUBSUB: Could not refund points. Has the reward been created through the app?");
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(response))
-                    {
-                        if (response.StartsWith("[announce "))
-                        {
-                            await AnnounceInChat(response);
-                        }
-                        else
-                        {
-                            SendChatMessage(Settings.Settings.TwChannel, response);
-                        }
-                    }
-                }
-            }
-
-            if (Settings.Settings.TwRewardSkipId.Any(id => id == reward.Id))
-            {
-                if (_skipCooldown)
-                    return;
-                await SpotifyApiHandler.SkipSong();
-
-                SendChatMessage(Settings.Settings.TwChannel, "Skipping current song...");
-                _skipCooldown = true;
-                SkipCooldownTimer.Start();
-            }
         }
 
         public static async Task RunTwitchUserSync()
@@ -4039,7 +3724,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static async void SendChatMessage(string channel, string message)
+        public static async void SendChatMessage(string channel, string message)
         {
             if (Client.IsConnected && Client.JoinedChannels.Any(c => c.Channel == channel))
                 await Client.SendMessageAsync(channel, message);
@@ -4330,7 +4015,7 @@ namespace Songify_Slim.Util.Songify
         public string Title { get; set; }
     }
 
-    internal class ReturnObject
+    public class ReturnObject
     {
         public string Msg { get; set; }
         public int Refundcondition { get; set; }
