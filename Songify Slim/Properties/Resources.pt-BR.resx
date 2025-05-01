@@ -59,7 +59,7 @@
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
-  <xsd:schema xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root">
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
@@ -137,6 +137,9 @@
   </data>
   <data name="brw_SongTooLong" xml:space="preserve">
     <value>Música muito longa</value>
+  </data>
+  <data name="brw_Success" xml:space="preserve">
+    <value>Música adicionada com sucesso (comando e recompensa)</value>
   </data>
   <data name="bw_btnAdd" xml:space="preserve">
     <value>Adicionar</value>
@@ -254,6 +257,9 @@
   </data>
   <data name="sw_SpotifySR_ClearQ" xml:space="preserve">
     <value>Limpar fila na inicialização</value>
+  </data>
+  <data name="sw_SpotifySR_CommandCD" xml:space="preserve">
+    <value>Tempo de espera do comando global (segundos)</value>
   </data>
   <data name="sw_SpotifySR_MaxLength" xml:space="preserve">
     <value>Duração máxima da música (em minutos)</value>
@@ -435,6 +441,9 @@
   <data name="Sw_System_OpenQueueOnStartup" xml:space="preserve">
     <value>Abrir janela de fila na inicialização</value>
   </data>
+  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
+    <value>Anunciar música automaticamente no chat (usa a resposta !song)</value>
+  </data>
   <data name="Sw_Integration_OnlyWorkWhenLive" xml:space="preserve">
     <value>Limite a atividade do Twitch para funcionar apenas quando a transmissão estiver ao vivo (é necessário fazer login no Twitch)</value>
   </data>
@@ -497,6 +506,9 @@
   </data>
   <data name="mw_menu_View" xml:space="preserve">
     <value>Visualizar</value>
+  </data>
+  <data name="mw_menu_BuyUsACoffee" xml:space="preserve">
+    <value>Apoie-nos no Ko-Fi!</value>
   </data>
   <data name="mw_LiveOutputPlaceholder" xml:space="preserve">
     <value>Artista - Título</value>
@@ -630,6 +642,9 @@
   <data name="brw_cmd_songlike" xml:space="preserve">
     <value>Adiciona a música atual à lista de reprodução selecionada na configuração do Spotify.</value>
   </data>
+  <data name="brw_cmd_play" xml:space="preserve">
+    <value>Retoma a reprodução atual.</value>
+  </data>
   <data name="sw_SpotifySR_Userlevel_command" xml:space="preserve">
     <value>Níveis de usuário permitidos para comando SR</value>
   </data>
@@ -690,9 +705,6 @@
   <data name="lang_br" xml:space="preserve">
     <value>Portugues do Brasil</value>
   </data>
-  <data name="mw_menu_BuyUsACoffee" xml:space="preserve">
-    <value>Apoie-nos no Ko-Fi!</value>
-  </data>
   <data name="brw_cmd_volIgnoreMod" xml:space="preserve">
     <value>Ignorar verificação de Emissora/Moderador</value>
   </data>
@@ -719,9 +731,6 @@
   </data>
   <data name="brw_cmd_QueueReturn" xml:space="preserve">
     <value>Retorna as primeiras 5 músicas da fila de reprodução atual</value>
-  </data>
-  <data name="sw_SpotifySR_CommandCD" xml:space="preserve">
-    <value>Tempo de espera do comando global (segundos)</value>
   </data>
   <data name="sw_SpotifySR_CommandCDUser" xml:space="preserve">
     <value>Tempo de espera do comando SR (por usuário)</value>
@@ -828,9 +837,6 @@
   <data name="s_Columns" xml:space="preserve">
     <value>Colunas</value>
   </data>
-  <data name="brw_cmd_play" xml:space="preserve">
-    <value>Retoma a reprodução atual.</value>
-  </data>
   <data name="brw_cmd_queue" xml:space="preserve">
     <value>Retorna as primeiras 5 músicas da fila de reprodução atual</value>
   </data>
@@ -903,16 +909,19 @@
   <data name="Param_Userlevel_Desc" xml:space="preserve">
     <value>O nível de usuário dos usuários (seguidor, assinante etc.)</value>
   </data>
-  <data name="Sw_intergration_AutoAnnounce" xml:space="preserve">
-    <value>Anunciar música automaticamente no chat (usa a resposta !song)</value>
-  </data>
   <data name="Param_TimeToPlay_Desc" xml:space="preserve">
     <value>O tempo em mm:ss em que a música solicitada será reproduzida.</value>
   </data>
-  <data name="brw_Success" xml:space="preserve">
-    <value>Música adicionada com sucesso (comando e recompensa)</value>
-  </data>
   <data name="brw_cmd_bansong" xml:space="preserve">
     <value>Adiciona a música atual à lista de bloqueio e a ignora.</value>
+  </data>
+  <data name="bw_lblBlockedGenre" xml:space="preserve">
+    <value>Género bloqueado</value>
+  </data>
+  <data name="mw_menu_Genre" xml:space="preserve">
+    <value>Blacklist de Géneros</value>
+  </data>
+  <data name="Sw_Integration_FulfillRedemption" xml:space="preserve">
+    <value>Concluir pedido de recompensa automaticamente</value>
   </data>
 </root>

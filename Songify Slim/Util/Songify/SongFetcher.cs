@@ -12,7 +12,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation;
 using Unosquare.Swan.Formatters;
 using System.Windows.Threading;
 using System.Reflection;
@@ -20,10 +19,8 @@ using System.Xml.Linq;
 using Songify_Slim.Models.YTMD;
 using Songify_Slim.Util.Spotify;
 using Image = Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models.Image;
-using System.Web.UI.WebControls;
 using Songify_Slim.Models.WebSocket;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
-using TwitchLib.Api.Helix.Models.Soundtrack;
 
 namespace Songify_Slim.Util.Songify
 {

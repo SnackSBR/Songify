@@ -367,6 +367,10 @@
                     d:Header="{x:Static local:Resources.mw_menu_Blacklist}"
                     Click="Mi_Blacklist_Click"
                     Header="{DynamicResource mw_menu_Blacklist}" />
+                <MenuItem
+                     x:Name="mi_Genre"
+                     Click="Mi_Genre_Click"
+                     Header="{x:Static local:Resources.mw_menu_Genre}" />
             </MenuItem>
             <MenuItem d:Header="{x:Static local:Resources.mw_menu_History}" Header="{DynamicResource mw_menu_History}">
                 <MenuItem

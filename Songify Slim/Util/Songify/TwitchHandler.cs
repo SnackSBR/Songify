@@ -1,5 +1,4 @@
-﻿using MahApps.Metro.Controls;
-using MahApps.Metro.Controls.Dialogs;
+﻿using MahApps.Metro.Controls.Dialogs;
 using MahApps.Metro.IconPacks;
 using Songify_Slim.Models;
 using Songify_Slim.Properties;
@@ -50,28 +49,17 @@ using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
 using static Songify_Slim.Util.General.Enums;
 using System.ComponentModel;
-using System.Configuration;
 using System.Globalization;
 using TwitchLib.Api.Helix.Models.Chat.GetChatters;
 using System.Web;
-using System.Windows.Interop;
-using Windows.Media.Playback;
-using Markdig.Syntax;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Songify_Slim.Util.Spotify;
-using TwitchLib.Api.Helix.Models.Moderation.GetModerators;
-using Image = Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models.Image;
-using TwitchLib.Api.Helix.Models.Soundtrack;
-using TwitchLib.PubSub.Models.Responses;
-using TwitchLib.Api.Helix.Models.Channels.GetChannelVIPs;
 using TwitchLib.Api.Helix.Models.Chat.GetUserChatColor;
 using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
-using TwitchLib.Api.Core.Models.Undocumented.Chatters;
-using TwitchLib.Api.V5.Models.Clips;
-using Newtonsoft.Json.Linq;
-using TwitchLib.PubSub.Enums;
-using TwitchLib.PubSub.Models.Responses.Messages.AutomodCaughtMessage;
-using Message = TwitchLib.PubSub.Models.Responses.Message;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using TwitchLib.EventSub.Websockets.Extensions;
+using TwitchLib.Communication.Interfaces;
 
 
 namespace Songify_Slim.Util.Songify
@@ -89,7 +77,7 @@ namespace Songify_Slim.Util.Songify
         private const int MaxConsecutiveFailures = 5;
         private static readonly Stopwatch CooldownStopwatch = new();
         private static readonly Timer CooldownTimer = new() { Interval = TimeSpan.FromSeconds(Settings.Settings.TwSrCooldown < 1 ? 0 : Settings.Settings.TwSrCooldown).TotalMilliseconds };
-        private static readonly Timer SkipCooldownTimer = new() { Interval = TimeSpan.FromSeconds(5).TotalMilliseconds };
+        public static readonly Timer SkipCooldownTimer = new() { Interval = TimeSpan.FromSeconds(5).TotalMilliseconds };
         private static readonly List<string> SkipVotes = [];
         private static bool toastSent = false;
 
@@ -111,10 +99,12 @@ namespace Songify_Slim.Util.Songify
         private static string _joinedChannelId = "";
         private static TwitchClient _mainClient;
         private static bool _onCooldown;
-        private static bool _skipCooldown;
+        public static bool _skipCooldown;
         private static TwitchAPI _twitchApiBot;
         private static string _userId;
         private static Subscription[] _subscriptions = [];
+
+        public static IHost _host;
 
         public static void ApiConnect(TwitchAccount account)
         {
@@ -218,9 +208,10 @@ namespace Songify_Slim.Util.Songify
                         {
                             foreach (JoinedChannel clientJoinedChannel in Client.JoinedChannels)
                             {
-                                Client.LeaveChannel(clientJoinedChannel);
+                                await Client.LeaveChannelAsync(clientJoinedChannel);
                                 Debug.WriteLine($"Leaving Channel: {clientJoinedChannel.Channel}");
                             }
+                            await Client.DisconnectAsync();
 
                             Client = null;
                         }
@@ -237,9 +228,10 @@ namespace Songify_Slim.Util.Songify
                         {
                             foreach (JoinedChannel mainClientJoinedChannel in _mainClient.JoinedChannels)
                             {
-                                _mainClient.LeaveChannel(mainClientJoinedChannel);
+                                await _mainClient.LeaveChannelAsync(mainClientJoinedChannel);
 
                             }
+                            await _mainClient.DisconnectAsync();
 
                             _mainClient = null;
                         }
@@ -289,8 +281,7 @@ namespace Songify_Slim.Util.Songify
                         return;
 
                     case { IsConnected: false }:
-                        Client.Connect();
-                        Client.JoinChannel(Settings.Settings.TwChannel);
+                        await Client.ConnectAsync();
                         return;
                 }
 
@@ -311,24 +302,20 @@ namespace Songify_Slim.Util.Songify
 
                 // creates new connection based on the credentials in settings
                 ConnectionCredentials credentials = new(Settings.Settings.TwAcc, Settings.Settings.TwOAuth);
-                ClientOptions clientOptions = new()
-                {
-                    MessagesAllowedInPeriod = 750,
-                    ThrottlingPeriod = TimeSpan.FromSeconds(30),
-                };
+                ClientOptions clientOptions = new(new ReconnectionPolicy(30000, null), true, 1500, TwitchLib.Communication.Enums.ClientType.Chat);
                 WebSocketClient customClient = new(clientOptions);
 
                 // Register all TwitchChatCommands
                 InitializeCommands(Settings.Settings.Commands);
 
-                Client = new TwitchClient(customClient);
-                Client.Initialize(credentials);
+                Client = new(customClient, TwitchLib.Client.Enums.ClientProtocol.WebSocket);
+                Client.Initialize(credentials, Settings.Settings.TwChannel);
                 Client.OnMessageReceived += Client_OnMessageReceived;
                 Client.OnConnected += Client_OnConnected;
                 Client.OnDisconnected += Client_OnDisconnected;
                 Client.OnJoinedChannel += ClientOnOnJoinedChannel;
                 Client.OnLeftChannel += ClientOnOnLeftChannel;
-                Client.Connect();
+                await Client.ConnectAsync();
 
                 // subscribes to the cooldown timer elapsed event for the command cooldown
                 CooldownTimer.Elapsed += CooldownTimer_Elapsed;
@@ -633,7 +620,7 @@ namespace Songify_Slim.Util.Songify
             RequestObject reqObj;
 
             string[] words = message.Message.Split(' ');
-            if (message.IsModerator || message.IsBroadcaster)
+            if (message.UserDetail.IsModerator || message.IsBroadcaster)
             {
                 if (words.Length > 1)
                 {
@@ -1161,7 +1148,7 @@ namespace Songify_Slim.Util.Songify
             // if onCooldown skips
             if (_onCooldown)
             {
-                Client.SendMessage(Settings.Settings.TwChannel, CreateCooldownResponse(message));
+                await Client.SendMessageAsync(Settings.Settings.TwChannel, CreateCooldownResponse(message));
                 return;
             }
 
@@ -1256,6 +1243,7 @@ namespace Songify_Slim.Util.Songify
                         }
                     };
 
+                    TwitchApi.Settings.Scopes = [AuthScopes.Channel_Manage_Redemptions, AuthScopes.Channel_Read_Redemptions, AuthScopes.Moderator_Read_Followers];
                     TokenCheck = await TwitchApi.Auth.ValidateAccessTokenAsync(Settings.Settings.TwitchAccessToken);
                     if (TokenCheck == null)
                     {
@@ -1356,6 +1344,9 @@ namespace Songify_Slim.Util.Songify
                     if (PubSubEnabled)
                         CreatePubSubsConnection();
 
+                    _host = CreateHostBuilder().Build();
+                    await _host.StartAsync();
+
                     break;
 
                 #endregion Main
@@ -1418,7 +1409,17 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        public static Task MainConnect()
+        private static IHostBuilder CreateHostBuilder() =>
+            Host.CreateDefaultBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddLogging();
+                    services.AddTwitchLibEventSubWebsockets();
+
+                    services.AddHostedService<WebsocketHostedService>();
+                });
+
+        public static async Task<Task> MainConnect()
         {
             switch (_mainClient)
             {
@@ -1426,8 +1427,7 @@ namespace Songify_Slim.Util.Songify
                     return Task.CompletedTask;
 
                 case { IsConnected: false }:
-                    _mainClient.Connect();
-                    _mainClient.JoinChannel(Settings.Settings.TwChannel);
+                    await _mainClient.ConnectAsync();
                     return Task.CompletedTask;
 
                 default:
@@ -1454,18 +1454,13 @@ namespace Songify_Slim.Util.Songify
                         if (Settings.Settings.TwitchUser == null) return Task.CompletedTask;
 
                         // creates new connection based on the credentials in settings
-                        ConnectionCredentials credentials =
-                            new(Settings.Settings.TwitchUser.DisplayName,
-                                $"oauth:{Settings.Settings.TwitchAccessToken}");
-                        ClientOptions clientOptions = new()
-                        {
-                            MessagesAllowedInPeriod = 750,
-                            ThrottlingPeriod = TimeSpan.FromSeconds(30)
-                        };
+                        ConnectionCredentials credentials = new(Settings.Settings.TwitchUser.DisplayName, $"oauth:{Settings.Settings.TwitchAccessToken}");
+                        ClientOptions clientOptions = new(new ReconnectionPolicy(30000, null), true, 1500, TwitchLib.Communication.Enums.ClientType.Chat);
                         WebSocketClient customClient = new(clientOptions);
-                        _mainClient = new TwitchClient(customClient);
+                        _mainClient = new(customClient, TwitchLib.Client.Enums.ClientProtocol.WebSocket);
                         _mainClient.Initialize(credentials, Settings.Settings.TwChannel);
-                        _mainClient.Connect();
+                        _mainClient.OnConnected += _mainClient_OnConnected;
+                        await _mainClient.ConnectAsync();
                     }
                     catch (Exception e)
                     {
@@ -1475,6 +1470,11 @@ namespace Songify_Slim.Util.Songify
                     break;
             }
             return Task.CompletedTask;
+        }
+
+        private static async Task _mainClient_OnConnected(object sender, TwitchLib.Client.Events.OnConnectedEventArgs e)
+        {
+            await _mainClient.JoinChannelAsync(Settings.Settings.TwChannel);
         }
 
         public static void ResetVotes()
@@ -1813,7 +1813,7 @@ namespace Songify_Slim.Util.Songify
         }
 
 
-        private static async Task<ReturnObject> AddSong2(string trackId, string username)
+        public static async Task<ReturnObject> AddSong2(string trackId, string username)
         {
             // loads the blacklist from settings
             string response;
@@ -1828,6 +1828,39 @@ namespace Songify_Slim.Util.Songify
                     Success = false,
                     Refundcondition = 3
                 };
+            }
+
+            foreach (var artista in track.Artists)
+            {
+                SearchItem artistSearch = SpotifyApiHandler.GetArtist(artista.Name);
+
+                if (artistSearch == null)
+                {
+                    break;
+                }
+
+                foreach (var artist in artistSearch.Artists.Items)
+                {
+                    if (artist.Name == artista.Name)
+                    {
+                        foreach (var genero in artist.Genres)
+                        {
+                            if (Settings.Settings.GenreBlacklist.Any(s => genero.ToLower().Contains(s.ToLower())))
+                            {
+                                return new ReturnObject
+                                {
+                                    Msg = "Genero musical não permitido!",
+                                    Success = false,
+                                    Refundcondition = 3
+                                };
+                            }
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
             }
 
             string artists = "";
@@ -2067,7 +2100,7 @@ namespace Songify_Slim.Util.Songify
             SendChatMessage(Settings.Settings.TwChannel, $"{msg}");
         }
 
-        private static async Task AnnounceInChat(string msg)
+        public static async Task AnnounceInChat(string msg)
         {
             Tuple<string, AnnouncementColors> tup = GetStringAndColor(msg);
             try
@@ -2142,11 +2175,11 @@ namespace Songify_Slim.Util.Songify
             List<TwitchUserLevels> userLevels = [];
 
             if (o.IsBroadcaster) userLevels.Add(TwitchUserLevels.Broadcaster);
-            if (o.IsModerator) userLevels.Add(TwitchUserLevels.Moderator);
-            if (o.IsVip) userLevels.Add(TwitchUserLevels.Vip);
-            if (o.IsSubscriber && subtier is 0 or 1) userLevels.Add(TwitchUserLevels.Subscriber);
-            if (o.IsSubscriber && subtier is 2) userLevels.Add(TwitchUserLevels.SubscriberT2);
-            if (o.IsSubscriber && subtier is 3) userLevels.Add(TwitchUserLevels.SubscriberT3);
+            if (o.UserDetail.IsModerator) userLevels.Add(TwitchUserLevels.Moderator);
+            if (o.UserDetail.IsVip) userLevels.Add(TwitchUserLevels.Vip);
+            if (o.UserDetail.IsSubscriber && subtier is 0 or 1) userLevels.Add(TwitchUserLevels.Subscriber);
+            if (o.UserDetail.IsSubscriber && subtier is 2) userLevels.Add(TwitchUserLevels.SubscriberT2);
+            if (o.UserDetail.IsSubscriber && subtier is 3) userLevels.Add(TwitchUserLevels.SubscriberT3);
 
             TwitchUser user = GlobalObjects.TwitchUsers.FirstOrDefault(user => user.UserId == o.UserId);
             if (user != null)
@@ -2181,7 +2214,7 @@ namespace Songify_Slim.Util.Songify
             return (userLevels.Max(), isAllowed);
         }
 
-        private static string CleanFormatString(string currSong)
+        public static string CleanFormatString(string currSong)
         {
             const RegexOptions options = RegexOptions.None;
             Regex regex = new("[ ]{2,}", options);
@@ -2191,8 +2224,9 @@ namespace Songify_Slim.Util.Songify
             return currSong;
         }
 
-        private static void Client_OnConnected(object sender, OnConnectedArgs e)
+        private static async Task Client_OnConnected(object sender, TwitchLib.Client.Events.OnConnectedEventArgs e)
         {
+            await Client.JoinChannelAsync(Settings.Settings.TwChannel);
             // Connected
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -2212,10 +2246,10 @@ namespace Songify_Slim.Util.Songify
                 }
             });
             Logger.LogStr($"TWITCH: Connected to Twitch. User: {Client.TwitchUsername}");
-            Client.JoinChannel(Settings.Settings.TwChannel, true);
+            await Client.JoinChannelAsync(Settings.Settings.TwChannel, true);
         }
 
-        private static void Client_OnDisconnected(object sender, OnDisconnectedEventArgs e)
+        private static Task Client_OnDisconnected(object sender, OnDisconnectedArgs e)
         {
             // Disconnected
             Application.Current.Dispatcher.Invoke(() =>
@@ -2235,9 +2269,11 @@ namespace Songify_Slim.Util.Songify
                 }
             });
             Logger.LogStr("TWITCH: Disconnected from Twitch Chat");
+
+            return Task.CompletedTask;
         }
 
-        private static async void Client_OnMessageReceived(object sender, OnMessageReceivedArgs e)
+        private static async Task Client_OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
             if (!e.ChatMessage.Message.StartsWith("!") && string.IsNullOrEmpty(e.ChatMessage.CustomRewardId))
                 return;
@@ -3189,7 +3225,7 @@ namespace Songify_Slim.Util.Songify
             return null;
         }
 
-        private static async void ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
+        private static async Task ClientOnOnJoinedChannel(object sender, OnJoinedChannelArgs e)
         {
             Logger.LogStr($"TWITCH: Joined channel {e.Channel}");
 
@@ -3229,9 +3265,10 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static void ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
+        private static Task ClientOnOnLeftChannel(object sender, OnLeftChannelArgs e)
         {
             Logger.LogStr($"TWITCH: Left channel {e.Channel}");
+            return Task.CompletedTask;
         }
 
         private static void CooldownTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -3439,7 +3476,7 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static int GetMaxRequestsForUserLevels(List<int> userLevels)
+        public static int GetMaxRequestsForUserLevels(List<int> userLevels)
         {
             return userLevels
                 .Select(level => (TwitchUserLevels)level)
@@ -3904,7 +3941,7 @@ namespace Songify_Slim.Util.Songify
             return false;
         }
 
-        private static bool IsUserBlocked(string displayName)
+        public static bool IsUserBlocked(string displayName)
         {
             // checks if one of the artist in the requested song is on the blacklist
             return Settings.Settings.UserBlacklist.Any(s =>
@@ -3921,7 +3958,7 @@ namespace Songify_Slim.Util.Songify
             return parameters.Aggregate(source, (current, parameter) => current.Replace($"{{{parameter.Key}}}", parameter.Value));
         }
 
-        private static bool MaxQueueItems(string requester, List<int> userLevels)
+        public static bool MaxQueueItems(string requester, List<int> userLevels)
         {
             // Get all current requests from this user (case-insensitive)
             List<RequestObject> userRequests = GlobalObjects.ReqList
@@ -4329,10 +4366,10 @@ namespace Songify_Slim.Util.Songify
             }
         }
 
-        private static void SendChatMessage(string channel, string message)
+        public static async void SendChatMessage(string channel, string message)
         {
             if (Client.IsConnected && Client.JoinedChannels.Any(c => c.Channel == channel))
-                Client.SendMessage(channel, message);
+                await Client.SendMessageAsync(channel, message);
             else
                 Logger.LogStr("DEBUG: Client.IsConnected returned FALSE or Client.JoinedChannels is NULL");
         }
@@ -4621,7 +4658,7 @@ namespace Songify_Slim.Util.Songify
         public string Title { get; set; }
     }
 
-    internal class ReturnObject
+    public class ReturnObject
     {
         public string Msg { get; set; }
         public int Refundcondition { get; set; }

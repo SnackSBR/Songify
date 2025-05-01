@@ -232,7 +232,7 @@ namespace Songify_Slim.Views
                     // Disconnects
                     case "Disconnect":
                         TwitchHandler.ForceDisconnect = true;
-                        TwitchHandler.Client.Disconnect();
+                        TwitchHandler.Client.DisconnectAsync();
                         break;
                 }
             }
@@ -941,7 +941,7 @@ namespace Songify_Slim.Views
                             Logger.LogExc(e);
                         }
                     }),
-                    new System.Windows.Forms.MenuItem("Disconnect", (_, _) => { TwitchHandler.Client.Disconnect(); })
+                    new System.Windows.Forms.MenuItem("Disconnect", (_, _) => { TwitchHandler.Client.DisconnectAsync(); })
                 ]),
                 new System.Windows.Forms.MenuItem("Show", (_, _) =>
                 {
@@ -1448,6 +1448,16 @@ namespace Songify_Slim.Views
         {
             string direcotry = Directory.GetCurrentDirectory();
             Process.Start(direcotry);
+        }
+
+        private void Mi_Genre_Click(object sender, RoutedEventArgs e)
+        {
+            // Opens the Blacklist Window
+            if (!IsWindowOpen<Window_Genre>())
+            {
+                Window_Genre wB = new() { Top = Top, Left = Left };
+                wB.Show();
+            }
         }
     }
 }

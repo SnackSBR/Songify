@@ -1175,6 +1175,18 @@
                                         TextWrapping="Wrap" />
                                 </controls:ToggleSwitch.Content>
                             </controls:ToggleSwitch>
+                            <controls:ToggleSwitch
+                                 x:Name="TglFulfillRedemption"
+                                 Height="32"
+                                 VerticalContentAlignment="Center"
+                                 Toggled="tgl_FulfillRedemption_Toggled"
+                                 ToolTip="Enabling this will fulfill the redemption automatically.">
+                                <TextBlock
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="{x:Static local:Resources.Sw_Integration_FulfillRedemption}"
+                                     TextWrapping="Wrap" />
+                            </controls:ToggleSwitch>
                         </StackPanel>
 
                         <Button

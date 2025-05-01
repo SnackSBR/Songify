@@ -980,6 +980,8 @@ namespace Songify_Slim.Util.Settings
                 WebUserAgent = GetWebua(),
                 YtmdToken = GetYtmdToken(),
                 HideSpotifyPremiumWarning = GetHideSpotifyPremiumWarning(),
+                FulfillRedemption = GetFulfillRedemption(),
+                GenreBlacklist = GetGenreBlacklist(),
             };
 
             TwitchCommands twitchCommands = new()
@@ -2608,6 +2610,40 @@ namespace Songify_Slim.Util.Settings
             CurrentConfig.TwitchCommands.Commands[index] = command;
             ConfigHandler.WriteAllConfig(CurrentConfig);
             TwitchHandler.InitializeCommands(Commands);
+        }
+
+        private static bool GetFulfillRedemption()
+        {
+            return CurrentConfig.AppConfig.FulfillRedemption;
+        }
+
+        private static List<string> GetGenreBlacklist()
+        {
+            return CurrentConfig.AppConfig.GenreBlacklist;
+        }
+
+        private static void SetFulfillRedemption(bool value)
+        {
+            CurrentConfig.AppConfig.FulfillRedemption = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
+        }
+
+        private static void SetGenreBlacklist(List<string> value)
+        {
+            CurrentConfig.AppConfig.GenreBlacklist = value;
+            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
+        }
+
+        public static bool FulfillRedemption
+        {
+            get => GetFulfillRedemption();
+            set => SetFulfillRedemption(value);
+        }
+
+        public static List<string> GenreBlacklist
+        {
+            get => GetGenreBlacklist();
+            set => SetGenreBlacklist(value);
         }
     }
 }

@@ -356,6 +356,7 @@ namespace Songify_Slim.Views
                     }
                 }
             }
+            TglFulfillRedemption.IsOn = Settings.FulfillRedemption;
 
             GridLoading.Visibility = Visibility.Collapsed;
             TabCtrl.IsEnabled = true;
@@ -1283,7 +1284,7 @@ namespace Songify_Slim.Views
         {
             Settings.TwAcc = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).Username;
             Settings.TwOAuth = ((UcAccountItem)((ComboBoxItem)CbAccountSelection.SelectedItem).Content).OAuth;
-            TwitchHandler.Client?.Disconnect();
+            TwitchHandler.Client?.DisconnectAsync();
             TwitchHandler.Client = null;
             await TwitchHandler.BotConnect();
             await TwitchHandler.MainConnect();
@@ -1657,6 +1658,11 @@ namespace Songify_Slim.Views
                 throw new ArgumentException("App version must have at least three components.");
 
             return string.Join(".", parts[0], parts[1], parts[2]); // Join the first three parts
+        }
+
+        private void tgl_FulfillRedemption_Toggled(object sender, RoutedEventArgs e)
+        {
+            Settings.FulfillRedemption = TglFulfillRedemption.IsOn;
         }
 
         private void BtnResponseParams_OnClick(object sender, RoutedEventArgs e)
