@@ -86,7 +86,7 @@ namespace Songify_Slim.Util.Songify
             Interval = TimeSpan.FromSeconds(5)
         };
 
-        private static readonly TwitchPubSub TwitchPubSub = new();
+        //private static readonly TwitchPubSub TwitchPubSub = new();
 
         // Threshold for setting IsLive to false
         private static readonly DispatcherTimer TwitchUserSyncTimer = new()
@@ -1531,8 +1531,8 @@ namespace Songify_Slim.Util.Songify
                     TwitchUserSyncTimer.Start();
                     await RunTwitchUserSync();
                     //TODO: Enable PubSub when it's fixed in TwitchLib
-                    if (PubSubEnabled)
-                        CreatePubSubsConnection();
+                    /*if (PubSubEnabled)
+                        CreatePubSubsConnection();*/
 
                     _host = CreateHostBuilder().Build();
                     await _host.StartAsync();
@@ -3546,7 +3546,7 @@ namespace Songify_Slim.Util.Songify
             return response;
         }
 
-        private static void CreatePubSubEventHandlers()
+        /*private static void CreatePubSubEventHandlers()
         {
             TwitchPubSub.OnListenResponse += OnListenResponse;
             TwitchPubSub.OnPubSubServiceConnected += OnPubSubServiceConnected;
@@ -3555,20 +3555,20 @@ namespace Songify_Slim.Util.Songify
             TwitchPubSub.OnChannelPointsRewardRedeemed += PubSub_OnChannelPointsRewardRedeemed;
             TwitchPubSub.OnStreamUp += OnStreamUp;
             TwitchPubSub.OnStreamDown += OnStreamDown;
-        }
+        }*/
 
-        private static void CreatePubSubListenEvents()
+        /*private static void CreatePubSubListenEvents()
         {
             TwitchPubSub.ListenToVideoPlayback(Settings.Settings.TwitchChannelId);
             TwitchPubSub.ListenToChannelPoints(Settings.Settings.TwitchChannelId);
-        }
+        }*/
 
-        private static void CreatePubSubsConnection()
+        /*private static void CreatePubSubsConnection()
         {
             CreatePubSubEventHandlers();
             CreatePubSubListenEvents();
             TwitchPubSub.Connect();
-        }
+        }*/
 
         private static string CreateResponse(PlaceholderContext context, string template)
         {
@@ -4228,7 +4228,7 @@ namespace Songify_Slim.Util.Songify
             //Debug.WriteLine($"{DateTime.Now.ToShortTimeString()} PubSub: Response received: {e.Response}");
         }
 
-        private static void OnPubSubServiceClosed(object sender, EventArgs e)
+        /*private static void OnPubSubServiceClosed(object sender, EventArgs e)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -4242,9 +4242,9 @@ namespace Songify_Slim.Util.Songify
             });
             //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Closed");
             Logger.LogStr("PUBSUB: Disconnected");
-        }
+        }*/
 
-        private static void OnPubSubServiceConnected(object sender, EventArgs e)
+        /*private static void OnPubSubServiceConnected(object sender, EventArgs e)
         {
             TwitchPubSub.SendTopics(Settings.Settings.TwitchAccessToken);
             Application.Current.Dispatcher.Invoke(() =>
@@ -4260,9 +4260,9 @@ namespace Songify_Slim.Util.Songify
             Logger.LogStr("TWITCH PUBSUB: Connected");
             SendChatMessage(Settings.Settings.TwChannel, "Connected to PubSub");
             //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Connected");
-        }
+        }*/
 
-        private static async void OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
+        /*private static async void OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
         {
             //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Error {e.Exception}");
             Logger.LogStr("PUBSUB: Error");
@@ -4282,7 +4282,7 @@ namespace Songify_Slim.Util.Songify
                 Console.WriteLine(exception);
                 throw;
             }
-        }
+        }*/
 
         private static void OnStreamDown(object sender, OnStreamDownArgs args)
         {
@@ -4296,7 +4296,7 @@ namespace Songify_Slim.Util.Songify
             Settings.Settings.IsLive = true;
         }
 
-        private static async void PubSub_OnChannelPointsRewardRedeemed(object sender,
+        /*private static async void PubSub_OnChannelPointsRewardRedeemed(object sender,
             OnChannelPointsRewardRedeemedArgs e)
         {
             if (Client is not { IsConnected: true })
@@ -4515,7 +4515,7 @@ namespace Songify_Slim.Util.Songify
                 _skipCooldown = true;
                 SkipCooldownTimer.Start();
             }
-        }
+        }*/
 
         public static async Task RunTwitchUserSync()
         {

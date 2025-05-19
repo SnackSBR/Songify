@@ -331,9 +331,6 @@ namespace Songify_Slim.Util.Songify
                         ((MainWindow)window).IconTwitchPubSub.Kind = PackIconBootstrapIconsKind.CheckCircleFill;
                     }
                 });
-                Logger.LogStr("TWITCH PUBSUB: Connected");
-                //SendChatMessage(Settings.Settings.TwChannel, "Connected to PubSub");
-                //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Connected");
             }
         }
 
@@ -352,7 +349,6 @@ namespace Songify_Slim.Util.Songify
                 }
             });
             //Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} PubSub: Closed");
-            Logger.LogStr("PUBSUB: Disconnected");
 
             // Don't do this in production. You should implement a better reconnect strategy
             while (!await _eventSubWebsocketClient.ReconnectAsync())

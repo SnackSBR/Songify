@@ -1006,7 +1006,6 @@ namespace Songify_Slim.Util.Settings
                 WebServerPort = GetWebServerPort(),
                 WebUserAgent = GetWebua(),
                 YtmdToken = GetYtmdToken(),
-                HideSpotifyPremiumWarning = GetHideSpotifyPremiumWarning(),
                 FulfillRedemption = GetFulfillRedemption(),
                 GenreBlacklist = GetGenreBlacklist(),
             };
