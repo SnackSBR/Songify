@@ -1,11 +1,16 @@
-﻿using Songify_Slim.Views;
+﻿using System;
+using System.Collections;
+using Songify_Slim.Views;
 using System.Collections.Generic;
 using Songify_Slim.Util.General;
 using Songify_Slim.Util.Spotify.SpotifyAPI.Web.Models;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using Songify_Slim.Models;
 using Songify_Slim.Util.Songify;
-using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using Songify_Slim.UserControls;
 
 namespace Songify_Slim.Util.Settings
 {
@@ -284,6 +289,8 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static bool DonationReminder { get => GetDonationReminder(); set => SetDonationReminder(value); }
+
+        public static bool DownloadCanvas { get => GetDownloadCanvas(); set => SetDownloadCanvas(value); }
 
         public static bool DownloadCover
         {
@@ -652,8 +659,6 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static string WebUserAgent => GetWebua();
-
-        public static bool DownloadCanvas { get => GetDownloadCanvas(); set => SetDownloadCanvas(value); }
         public static string YtmdToken { get => GetYtmdToken(); set => SetYtmdToken(value); }
         public static string BotCmdCommandsTrigger { get => GetBotCmdCommandsTrigger(); set => SetBotCmdCommandsTrigger(value); }
         public static string BotRespUserlevelTooLowCommand { get => GetBotRespUserlevelTooLowCommand(); set => SetBotRespUserlevelTooLowCommand(value); }
@@ -669,6 +674,18 @@ namespace Songify_Slim.Util.Settings
         public static List<int> UnlimitedSrUserlevelsReward { get => GetUnlimitedSrUserlevelsReward(); set => SetUnlimitedSrUserlevelsReward(value); }
         public static DateTime TwitchAccessTokenExpiryDate { get => GetTwitchAccessTokenExpiryDate(); set => SetTwitchAccessTokenExpiryDate(value); }
         public static bool HideSpotifyPremiumWarning { get => GetHideSpotifyPremiumWarning(); set => SetHideSpotifyPremiumWarning(value); }
+        public static bool LongBadgeNames { get => GetLongBadgeNames(); set => SetLongBadgeNames(value); }
+
+        private static void SetLongBadgeNames(bool value)
+        {
+            CurrentConfig.AppConfig.LongBadgeNames = value;
+            ConfigHandler.WriteAllConfig(CurrentConfig);
+        }
+
+        private static bool GetLongBadgeNames()
+        {
+            return CurrentConfig.AppConfig.LongBadgeNames;
+        }
 
         private static void SetHideSpotifyPremiumWarning(bool value)
         {
@@ -764,7 +781,19 @@ namespace Songify_Slim.Util.Settings
         }
 
         public static string BotRespUserlevelTooLowReward { get => GetBotRespUserlevelTooLowReward(); set => SetBotRespUserlevelTooLowReward(value); }
-        public static string SpotifyRedirectUri { get => GetSpotifyRedirectUri();  set => SetSpotifyRedirectUri(value); }
+        public static string SpotifyRedirectUri { get => GetSpotifyRedirectUri(); set => SetSpotifyRedirectUri(value); }
+        public static string BotRespBlacklistSong { get => GetBotRespBlacklistSong(); set => SetBotRespBlacklistSong(value); }
+
+        private static void SetBotRespBlacklistSong(string value)
+        {
+            CurrentConfig.BotConfig.BotRespBlacklistSong = value;
+            ConfigHandler.WriteAllConfig(CurrentConfig);
+        }
+
+        private static string GetBotRespBlacklistSong()
+        {
+            return CurrentConfig.BotConfig.BotRespBlacklistSong;
+        }
 
         private static string GetSpotifyRedirectUri()
         {
@@ -807,25 +836,25 @@ namespace Songify_Slim.Util.Settings
                 ClientId = GetClientId(),
                 ClientSecret = GetClientSecret(),
                 DeviceId = GetSpotifyDeviceId(),
-                RefreshToken = GetSpotifyRefreshToken(),
-                Profile = GetSpotifyProfile(),
                 PlaylistCache = GetSpotifyPlaylistCache(),
-                RedirectUri = GetSpotifyRedirectUri()                        
+                Profile = GetSpotifyProfile(),
+                RedirectUri = GetSpotifyRedirectUri(),
+                RefreshToken = GetSpotifyRefreshToken(),
             };
 
             TwitchCredentials twitchCredentials = new()
             {
                 AccessToken = GetTwitchAccessToken(),
+                AccessTokenExpiryDate = GetBotAccessTokenExpiryDate(),
                 BotAccountName = GetTwAcc(),
                 BotOAuthToken = GetTwOAuth(),
+                BotTokenExpiryDate = GetBotAccessTokenExpiryDate(),
                 BotUser = GetTwitchBotUser(),
                 ChannelId = GetTwitchChannelId(),
                 ChannelName = GetTwChannel(),
                 TwitchBotToken = GetTwitchBotToken(),
                 TwitchUser = GetTwitchUser(),
                 TwitchUserColor = GetTwitchUserColor(),
-                BotTokenExpiryDate = GetBotAccessTokenExpiryDate(),
-                AccessTokenExpiryDate = GetBotAccessTokenExpiryDate()
             };
 
             BotConfig botConfig = new()
@@ -857,6 +886,7 @@ namespace Songify_Slim.Util.Settings
                 BotCmdVolTrigger = "!vol",
                 BotCmdVoteskipTrigger = GetCmdVoteskipTrigger(),
                 BotRespBlacklist = GetBot_Resp_Blacklist(),
+                BotRespBlacklistSong = GetBotRespBlacklistSong(),
                 BotRespCooldown = GetBot_Resp_Cooldown(),
                 BotRespError = GetBot_Resp_Error(),
                 BotRespExplicitSong = GetBot_Resp_ExplicitSong(),
@@ -908,10 +938,12 @@ namespace Songify_Slim.Util.Settings
                 DownloadCover = GetDownloadCover(),
                 FontSize = GetFontSize(),
                 FontsizeQueue = GetFontSizeQueue(),
+                HideSpotifyPremiumWarning = GetHideSpotifyPremiumWarning(),
                 KeepAlbumCover = GetKeepAlubmCover(),
                 Language = GetLanguage(),
                 LastShownMotdId = GetLastShownMotdId(),
                 LimitSrToPlaylist = GetLimitSrToPlaylist(),
+                LongBadgeNames = GetLongBadgeNames(),
                 MaxSongLength = GetMaxSongLength(),
                 MsgLoggingEnabled = GetMsgLoggingEnabled(),
                 OpenQueueOnStartup = GetOpenQueueOnStartup(),
@@ -930,8 +962,6 @@ namespace Songify_Slim.Util.Settings
                 RewardGoalSong = GetRewardGoalSong(),
                 SaveHistory = GetSaveHistory(),
                 ShowUserLevelBadges = GetShowUserLevelBadges(),
-                UnlimitedSrUserlevelsReward = GetUnlimitedSrUserlevelsReward(),
-                UnlimitedSrUserlevelsCommand = GetUnlimitedSrUserlevelsCommand(),
                 SongBlacklist = GetSongBlacklist(),
                 SpaceCount = GetSpaceCount(),
                 SplitOutput = GetSplitOutput(),
@@ -962,6 +992,8 @@ namespace Songify_Slim.Util.Settings
                 TwSrReward = GetTwSrReward(),
                 TwSrUnlimitedSr = GetTwSrUnlimitedSr(),
                 TwSrUserLevel = GetTwSrUserLevel(),
+                UnlimitedSrUserlevelsCommand = GetUnlimitedSrUserlevelsCommand(),
+                UnlimitedSrUserlevelsReward = GetUnlimitedSrUserlevelsReward(),
                 UpdateRequired = GetUpdateRequired(),
                 Upload = GetUpload(),
                 UploadHistory = GetUploadHistory(),
@@ -974,9 +1006,6 @@ namespace Songify_Slim.Util.Settings
                 WebServerPort = GetWebServerPort(),
                 WebUserAgent = GetWebua(),
                 YtmdToken = GetYtmdToken(),
-                FulfillRedemption = GetFulfillRedemption(),
-                GenreBlacklist = GetGenreBlacklist(),
-                HideSpotifyPremiumWarning = GetHideSpotifyPremiumWarning(),
             };
 
             TwitchCommands twitchCommands = new()
@@ -2605,40 +2634,6 @@ namespace Songify_Slim.Util.Settings
             CurrentConfig.TwitchCommands.Commands[index] = command;
             ConfigHandler.WriteAllConfig(CurrentConfig);
             TwitchHandler.InitializeCommands(Commands);
-        }
-
-        private static bool GetFulfillRedemption()
-        {
-            return CurrentConfig.AppConfig.FulfillRedemption;
-        }
-
-        private static List<string> GetGenreBlacklist()
-        {
-            return CurrentConfig.AppConfig.GenreBlacklist;
-        }
-
-        private static void SetFulfillRedemption(bool value)
-        {
-            CurrentConfig.AppConfig.FulfillRedemption = value;
-            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
-        }
-
-        private static void SetGenreBlacklist(List<string> value)
-        {
-            CurrentConfig.AppConfig.GenreBlacklist = value;
-            ConfigHandler.WriteConfig(Enums.ConfigTypes.AppConfig, CurrentConfig.AppConfig);
-        }
-		
-		public static bool FulfillRedemption 
-        { 
-            get => GetFulfillRedemption(); 
-            set => SetFulfillRedemption(value); 
-        }
-
-        public static List<string> GenreBlacklist
-        {
-            get => GetGenreBlacklist();
-            set => SetGenreBlacklist(value);
         }
     }
 }

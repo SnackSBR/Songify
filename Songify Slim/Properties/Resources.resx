@@ -863,7 +863,7 @@
     <comment>Use Default Web Browser</comment>
   </data>
   <data name="brw_CommandOnCooldown" xml:space="preserve">
-    <value>Response wehen the sr command is on cooldown</value>
+    <value>Response when the sr command is on cooldown</value>
     <comment>Command on Cooldown Response</comment>
   </data>
   <data name="brw_NoTrackFound" xml:space="preserve">
@@ -1108,5 +1108,8 @@
   </data>
   <data name="brw_cmd_bansong" xml:space="preserve">
     <value>Adds the current song to the blocklist and skips it.</value>
+  </data>
+  <data name="brw_SongBlocked" xml:space="preserve">
+    <value>Song is blocked</value>
   </data>
 </root>
