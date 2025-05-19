@@ -35,7 +35,6 @@ using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using TwitchLib.PubSub;
 using TwitchLib.PubSub.Events;
@@ -46,7 +45,6 @@ using Application = System.Windows.Application;
 using Reward = TwitchLib.PubSub.Models.Responses.Messages.Redemption.Reward;
 using Timer = System.Timers.Timer;
 using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
-using TwitchLib.Api.Helix.Models.Subscriptions;
 using static Songify_Slim.Util.General.Enums;
 using System.ComponentModel;
 using System.Globalization;
@@ -59,10 +57,6 @@ using TwitchCommandParams = Songify_Slim.Models.TwitchCommandParams;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using TwitchLib.EventSub.Websockets.Extensions;
-using TwitchLib.Communication.Interfaces;
-using TwitchLib.Api.Core.Models.Undocumented.Chatters;
-using TwitchLib.Api.V5.Models.Clips;
-using Newtonsoft.Json.Linq;
 using Songify_Slim.Models.YTMD;
 using Subscription = TwitchLib.Api.Helix.Models.Subscriptions.Subscription;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
@@ -2692,7 +2686,7 @@ namespace Songify_Slim.Util.Songify
                 // if onCooldown skips
                 if (_onCooldown)
                 {
-                    Client.SendMessage(Settings.Settings.TwChannel, CreateCooldownResponse(e.ChatMessage));
+                    await Client.SendMessageAsync(Settings.Settings.TwChannel, CreateCooldownResponse(e.ChatMessage));
                     return;
                 }
 
