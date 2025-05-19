@@ -924,4 +924,7 @@
   <data name="Sw_Integration_FulfillRedemption" xml:space="preserve">
     <value>Concluir pedido de recompensa automaticamente</value>
   </data>
+  <data name="brw_SongBlocked" xml:space="preserve">
+    <value>A música está bloqueada</value>
+  </data>
 </root>

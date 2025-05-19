@@ -259,7 +259,7 @@ namespace Songify_Slim.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Response wehen the sr command is on cooldown.
+        ///   Looks up a localized string similar to Response when the sr command is on cooldown.
         /// </summary>
         public static string brw_CommandOnCooldown {
             get {
@@ -381,6 +381,15 @@ namespace Songify_Slim.Properties {
         public static string brw_Song {
             get {
                 return ResourceManager.GetString("brw_Song", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Song is blocked.
+        /// </summary>
+        public static string brw_SongBlocked {
+            get {
+                return ResourceManager.GetString("brw_SongBlocked", resourceCulture);
             }
         }
         
