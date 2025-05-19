@@ -777,13 +777,19 @@
       <Version>3.5.3</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.Api">
-      <Version>3.10.0-preview-92a4359</Version>
+      <Version>3.10.0-preview-e47ba7f</Version>
+    </PackageReference>
+    <PackageReference Include="TwitchLib.Api.Core.Enums">
+      <Version>3.10.0-preview-4e0146c</Version>
+    </PackageReference>
+    <PackageReference Include="TwitchLib.Api.Core.Models">
+      <Version>3.10.0-preview-4e0146c</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.Api.Helix">
-      <Version>3.10.0-preview-92a4359</Version>
+      <Version>3.10.0-preview-4e0146c</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.Api.Helix.Models">
-      <Version>3.10.0-preview-92a4359</Version>
+      <Version>3.10.0-preview-4e0146c</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.Client">
       <Version>4.0.0-preview-5ef35d539836f8bcd29bd836a23b9e853020acfa</Version>
@@ -798,10 +804,10 @@
       <Version>2.0.1</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.EventSub.Core">
-      <Version>2.5.3-preview-7b3edb2</Version>
+      <Version>2.5.3-preview-e4631fd</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.EventSub.Websockets">
-      <Version>0.6.0-preview-6f4cd77</Version>
+      <Version>0.6.0-preview-8dbcfb5</Version>
     </PackageReference>
     <PackageReference Include="TwitchLib.PubSub">
       <Version>4.0.0-preview-10721e305d3e0b2ac6c93bb75d44140ce38b1322</Version>

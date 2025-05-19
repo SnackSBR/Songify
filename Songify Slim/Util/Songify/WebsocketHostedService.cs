@@ -70,7 +70,7 @@ namespace Songify_Slim.Util.Songify
 
             if (Settings.Settings.TwRewardId.Any(o => o == reward.Id))
             {
-                Logger.LogStr($"PUBSUB: Channel reward {reward.Title} redeemed by {redemption.UserName}");
+                Logger.LogStr($"EVENTSUB: Channel reward {reward.Title} redeemed by {redemption.UserName}");
                 List<int> userlevel = GlobalObjects.TwitchUsers.First(o => o.UserId == redemption.UserId).UserLevels;
                 Logger.LogStr($"{redemption.UserName}s userlevel = {userlevel.Last()} ({Enum.GetName(typeof(TwitchUserLevels), userlevel.Last())})");
                 string msg;
@@ -178,6 +178,7 @@ namespace Songify_Slim.Util.Songify
 
                     ReturnObject returnObject = await TwitchHandler.AddSong2(trackId, redemption.UserName);
                     msg = returnObject.Msg;
+                    
                     if (Settings.Settings.RefundConditons.Any(i => i == returnObject.Refundcondition) && isManagable)
                     {
                         try
